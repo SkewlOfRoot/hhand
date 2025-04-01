@@ -16,12 +16,12 @@ pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
 
     let json = match read_to_string(path) {
         Ok(content) => content,
-        Err(why) => panic!("failed to read content from file: {}", why),
+        Err(why) => panic!("failed to read content from file: {why}"),
     };
 
     let bookmarks = match serde_json::from_str::<Vec<Bookmark>>(&json) {
         Ok(b) => b,
-        Err(why) => panic!("failed to deserialize to bookmarks: {}", why),
+        Err(why) => panic!("failed to deserialize to bookmarks: {why}"),
     };
 
     Ok(bookmarks)
@@ -41,7 +41,7 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
 
     let selector = match Selector::parse("a") {
         Ok(sel) => sel,
-        Err(why) => panic!("failed to parse 'a' tags in HTML document: {}", why),
+        Err(why) => panic!("failed to parse 'a' tags in HTML document: {why}"),
     };
 
     let mut bookmarks: Vec<Bookmark> = Vec::new();
@@ -66,12 +66,12 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
 
     let mut file = match File::create(path) {
         Ok(file) => file,
-        Err(why) => panic!("failed to create resource file: {}", why),
+        Err(why) => panic!("failed to create resource file: {why}"),
     };
 
     match file.write_all(json.as_bytes()) {
-        Ok(_) => println!("successfully imported {} bookmarks.", bookmarks.len()),
-        Err(why) => panic!("failed to write bookmarks to file: {}", why),
+        Ok(()) => println!("successfully imported {} bookmarks.", bookmarks.len()),
+        Err(why) => panic!("failed to write bookmarks to file: {why}"),
     }
 
     Ok(())
@@ -80,7 +80,7 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
 fn resource_file_path() -> PathBuf {
     let mut path = match std::env::current_exe() {
         Ok(p) => p,
-        Err(why) => panic!("faild to get current EXE path: {}", why),
+        Err(why) => panic!("faild to get current EXE path: {why}"),
     };
     path.pop();
     path.push(RESOURCE_FILE_NAME);
