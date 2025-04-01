@@ -9,5 +9,7 @@ fn main() -> anyhow::Result<()> {
         "c:/temp/bookmarks/bookmarks_3_30_25.html",
     )?)?;
 
+    _ = bookmarks::load_bookmarks();
+
     Ok(())
 }
