@@ -87,7 +87,7 @@ fn resource_file_path() -> PathBuf {
     path
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Bookmark {
     pub name: String,
     pub url: String,
