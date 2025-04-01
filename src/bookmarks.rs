@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::fs::{read_to_string, File};
@@ -5,6 +6,26 @@ use std::io::Write;
 use std::path::PathBuf;
 
 const RESOURCE_FILE_NAME: &str = "hhand.resources.json";
+
+pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
+    let path = resource_file_path()?;
+
+    if !path.exists() {
+        return Err(anyhow!("Could not load bookmarks because the {} file does not exist. Please use the import command to import bookmarks to the resource file.", RESOURCE_FILE_NAME));
+    }
+
+    let json = match read_to_string(path) {
+        Ok(content) => content,
+        Err(why) => panic!("failed to read content from file: {}", why),
+    };
+
+    let bookmarks = match serde_json::from_str::<Vec<Bookmark>>(&json) {
+        Ok(b) => b,
+        Err(why) => panic!("failed to deserialize to bookmarks: {}", why),
+    };
+
+    Ok(bookmarks)
+}
 
 pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<()> {
     let html = read_to_string(import_file).expect("failed to read content from import file.");
@@ -41,9 +62,7 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
 fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     let json = serde_json::to_string(&bookmarks)?;
 
-    let mut path = std::env::current_exe().expect("current EXE not found.");
-    path.pop();
-    path.push(RESOURCE_FILE_NAME);
+    let path = resource_file_path()?;
 
     let mut file = match File::create(path) {
         Ok(file) => file,
@@ -56,6 +75,16 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn resource_file_path() -> anyhow::Result<PathBuf> {
+    let mut path = match std::env::current_exe() {
+        Ok(p) => p,
+        Err(why) => panic!("faild to get current EXE path: {}", why),
+    };
+    path.pop();
+    path.push(RESOURCE_FILE_NAME);
+    Ok(path)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
