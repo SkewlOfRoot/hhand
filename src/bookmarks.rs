@@ -8,7 +8,7 @@ use std::path::PathBuf;
 const RESOURCE_FILE_NAME: &str = "hhand.resources.json";
 
 pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
-    let path = resource_file_path()?;
+    let path = resource_file_path();
 
     if !path.exists() {
         return Err(anyhow!("Could not load bookmarks because the {} file does not exist. Please use the import command to import bookmarks to the resource file.", RESOURCE_FILE_NAME));
@@ -62,7 +62,7 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
 fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     let json = serde_json::to_string(&bookmarks)?;
 
-    let path = resource_file_path()?;
+    let path = resource_file_path();
 
     let mut file = match File::create(path) {
         Ok(file) => file,
@@ -77,14 +77,14 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn resource_file_path() -> anyhow::Result<PathBuf> {
+fn resource_file_path() -> PathBuf {
     let mut path = match std::env::current_exe() {
         Ok(p) => p,
         Err(why) => panic!("faild to get current EXE path: {}", why),
     };
     path.pop();
     path.push(RESOURCE_FILE_NAME);
-    Ok(path)
+    path
 }
 
 #[derive(Serialize, Deserialize, Debug)]
