@@ -47,8 +47,18 @@ impl App {
         self.bookmark_list.state.select_previous();
     }
 
-    pub fn search(&self) -> &Vec<Bookmark> {
-        &self.bookmark_list.bookmarks
+    pub fn search(&self) -> Vec<Bookmark> {
+        self.bookmark_list
+            .bookmarks
+            .iter()
+            .filter(|b| {
+                !&self.search_str.is_empty()
+                    && b.name
+                        .to_uppercase()
+                        .contains(&self.search_str.to_uppercase())
+            })
+            .cloned()
+            .collect()
     }
 
     pub fn run(mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
@@ -79,8 +89,6 @@ impl App {
             _ => {}
         }
     }
-
-    //pub fn render(self, frame: &mut Frame) {}
 }
 
 impl Widget for &mut App {
@@ -94,23 +102,23 @@ impl Widget for &mut App {
             ])
             .areas(area);
 
+        self.render_header(buf, header_area);
+        self.render_list(buf, main_area);
+    }
+}
+
+// Rendering
+impl App {
+    fn render_header(&self, buf: &mut Buffer, header_area: Rect) {
         let search_block = Block::default().title("Search").borders(Borders::ALL);
         Paragraph::new(self.search_str.clone())
             .block(search_block)
             .render(header_area, buf);
+    }
 
+    fn render_list(&mut self, buf: &mut Buffer, main_area: Rect) {
         let mut list_items = Vec::<ListItem>::new();
-        let matches: Vec<Bookmark> = self
-            .search()
-            .iter()
-            .filter(|b| {
-                !&self.search_str.is_empty()
-                    && b.name
-                        .to_uppercase()
-                        .contains(&self.search_str.to_uppercase())
-            })
-            .cloned()
-            .collect();
+        let matches = self.search();
 
         for m in matches {
             list_items.push(ListItem::new(Line::from(Span::styled(
@@ -133,14 +141,6 @@ impl Widget for &mut App {
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, main_area, buf, &mut self.bookmark_list.state);
-        //frame.render_stateful_widget(list, main_area, &mut app.bookmarkList.state);
-
-        let _ = if let Some(i) = self.bookmark_list.state.selected() {
-            format!("info: {}", self.bookmark_list.bookmarks[i].name)
-        } else {
-            "Nothing selected...".to_string()
-        };
-        // //self.render_selected_item(item_area, buf);
     }
 }
 

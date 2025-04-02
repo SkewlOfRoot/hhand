@@ -48,11 +48,8 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
 
     for element in document.select(&selector) {
         if let Some(href) = element.value().attr("href") {
-            let label = element.text().collect::<String>().trim().to_string();
-            bookmarks.push(Bookmark {
-                name: label,
-                url: href.to_string(),
-            });
+            let name = element.text().collect::<String>().trim().to_string();
+            bookmarks.push(Bookmark::new(name.as_str(), href));
         }
     }
 
@@ -91,4 +88,13 @@ fn resource_file_path() -> PathBuf {
 pub struct Bookmark {
     pub name: String,
     pub url: String,
+}
+
+impl Bookmark {
+    pub fn new(name: &str, url: &str) -> Bookmark {
+        Bookmark {
+            name: name.to_string(),
+            url: url.to_string(),
+        }
+    }
 }
