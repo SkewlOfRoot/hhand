@@ -25,9 +25,9 @@ const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier:
 
 pub struct App {
     should_exit: bool,
-    pub bookmark_list: BookmarkList,
-    pub search_str: String,
-    pub state: AppState,
+    bookmark_list: BookmarkList,
+    search_str: String,
+    state: AppState,
     title: String,
     import_path: String,
 }
@@ -54,15 +54,17 @@ impl App {
         app
     }
 
-    pub fn select_next(&mut self) {
-        self.bookmark_list.state.select_next();
+    pub fn run(mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
+        while !self.should_exit {
+            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
+            if let Event::Key(key) = event::read()? {
+                self.handle_key(key);
+            };
+        }
+        Ok(())
     }
 
-    pub fn select_previous(&mut self) {
-        self.bookmark_list.state.select_previous();
-    }
-
-    pub fn search(&self) -> Vec<Bookmark> {
+    fn search(&self) -> Vec<Bookmark> {
         self.bookmark_list
             .bookmarks
             .iter()
@@ -74,16 +76,6 @@ impl App {
             })
             .cloned()
             .collect()
-    }
-
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
-        while !self.should_exit {
-            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
-            if let Event::Key(key) = event::read()? {
-                self.handle_key(key);
-            };
-        }
-        Ok(())
     }
 
     fn handle_key(&mut self, key: event::KeyEvent) {
@@ -120,6 +112,14 @@ impl App {
                 _ => {}
             },
         }
+    }
+
+    fn select_next(&mut self) {
+        self.bookmark_list.state.select_next();
+    }
+
+    fn select_previous(&mut self) {
+        self.bookmark_list.state.select_previous();
     }
 
     fn open_bookmark(&self) {
