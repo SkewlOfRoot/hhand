@@ -5,7 +5,10 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{
-        palette::{material::BLUE, tailwind::SLATE},
+        palette::{
+            material::{BLUE, GREEN, RED},
+            tailwind::SLATE,
+        },
         Color, Modifier, Style, Stylize,
     },
     symbols,
@@ -22,6 +25,8 @@ use crate::bookmarks::{self, Bookmark};
 const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+const SUCCESS_STYLE: Style = Style::new().fg(GREEN.c800).add_modifier(Modifier::BOLD);
+const ERROR_STYLE: Style = Style::new().fg(RED.c800).add_modifier(Modifier::BOLD);
 
 pub struct App {
     should_exit: bool,
@@ -30,11 +35,18 @@ pub struct App {
     state: AppState,
     title: String,
     import_path: String,
+    status_message: StatusMessage,
 }
 
 pub enum AppState {
     Search,
     Import,
+}
+
+pub enum StatusMessage {
+    Success(String),
+    Error(String),
+    None,
 }
 
 impl App {
@@ -49,6 +61,7 @@ impl App {
             state: AppState::Search,
             title: String::new(),
             import_path: String::new(),
+            status_message: StatusMessage::None,
         };
         app.set_search_state();
         app
@@ -133,12 +146,14 @@ impl App {
     fn set_import_state(&mut self) {
         self.state = AppState::Import;
         self.title = "Enter import file path".to_string();
+        self.status_message = StatusMessage::None;
     }
 
     fn set_search_state(&mut self) {
         self.state = AppState::Search;
         self.search_str.clear();
         self.title = "Search".to_string();
+        self.status_message = StatusMessage::None;
     }
 
     fn initiate_import(&mut self) {
@@ -148,15 +163,20 @@ impl App {
                     panic!("Failed to import bookmarks from file: {why}");
                 } else {
                     self.import_path.clear();
+                    self.status_message = StatusMessage::Success(format!(
+                        "Successfully imported {} bookmarks.",
+                        self.bookmark_list.bookmarks.len()
+                    ));
                 }
             } else {
-                panic!(
+                self.status_message = StatusMessage::Error(format!(
                     "Could not find import file at path '{}'.",
                     &self.import_path
-                );
+                ));
             }
         } else {
-            panic!("Unable to construct the import file path.")
+            self.status_message =
+                StatusMessage::Error("Unable to construct the import file path.".to_string());
         }
     }
 
@@ -168,7 +188,7 @@ impl App {
 /// Implement the Widget trait for App
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let [header_area, main_area, _] = Layout::default()
+        let [header_area, main_area, footer_area] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(3),
@@ -184,6 +204,7 @@ impl Widget for &mut App {
                 self.render_search_list(buf, main_area)
             }
         }
+        self.render_footer(buf, footer_area);
     }
 }
 
@@ -232,6 +253,28 @@ impl App {
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, area, buf, &mut self.bookmark_list.state);
+    }
+
+    fn render_footer(&self, buf: &mut Buffer, area: Rect) {
+        let message: &str;
+        let style;
+
+        match &self.status_message {
+            StatusMessage::Success(msg) => {
+                message = msg;
+                style = SUCCESS_STYLE;
+            }
+            StatusMessage::Error(err) => {
+                message = err;
+                style = ERROR_STYLE;
+            }
+            StatusMessage::None => {
+                message = "";
+                style = SUCCESS_STYLE;
+            }
+        }
+
+        Paragraph::new(message).style(style).render(area, buf);
     }
 }
 

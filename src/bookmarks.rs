@@ -66,9 +66,8 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
         Err(why) => panic!("failed to create resource file: {why}"),
     };
 
-    match file.write_all(json.as_bytes()) {
-        Ok(()) => println!("Successfully imported {} bookmarks.", bookmarks.len()),
-        Err(why) => panic!("failed to write bookmarks to file: {why}"),
+    if let Err(why) = file.write_all(json.as_bytes()) {
+        panic!("failed to write bookmarks to file: {why}");
     }
 
     Ok(())
