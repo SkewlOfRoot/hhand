@@ -67,7 +67,7 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     };
 
     match file.write_all(json.as_bytes()) {
-        Ok(()) => println!("successfully imported {} bookmarks.", bookmarks.len()),
+        Ok(()) => println!("Successfully imported {} bookmarks.", bookmarks.len()),
         Err(why) => panic!("failed to write bookmarks to file: {why}"),
     }
 

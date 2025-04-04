@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf, str::FromStr};
+use std::io;
 
 use crossterm::{
     event::EnableMouseCapture,
@@ -20,10 +20,6 @@ fn main() -> anyhow::Result<()> {
 
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
-
-    bookmarks::import_from_file(PathBuf::from_str(
-        "c:/temp/bookmarks/bookmarks_3_30_25.html",
-    )?)?;
 
     let bookmarks = bookmarks::load_bookmarks()?;
 

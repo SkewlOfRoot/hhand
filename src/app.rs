@@ -1,3 +1,5 @@
+use std::{path::PathBuf, str::FromStr};
+
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
@@ -15,7 +17,7 @@ use ratatui::{
     DefaultTerminal,
 };
 
-use crate::bookmarks::Bookmark;
+use crate::bookmarks::{self, Bookmark};
 
 const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
@@ -25,18 +27,31 @@ pub struct App {
     should_exit: bool,
     pub bookmark_list: BookmarkList,
     pub search_str: String,
+    pub state: AppState,
+    title: String,
+    import_path: String,
+}
+
+pub enum AppState {
+    Search,
+    Import,
 }
 
 impl App {
     pub fn new(bookmarks: Vec<Bookmark>) -> App {
-        App {
+        let mut app = App {
             should_exit: false,
             bookmark_list: BookmarkList {
                 bookmarks,
                 state: ListState::default(),
             },
             search_str: String::new(),
-        }
+            state: AppState::Search,
+            title: String::new(),
+            import_path: String::new(),
+        };
+        app.set_search_state();
+        app
     }
 
     pub fn select_next(&mut self) {
@@ -76,21 +91,81 @@ impl App {
             return;
         }
 
-        match key.code {
-            KeyCode::Backspace => {
-                self.search_str.pop();
-            }
-            KeyCode::Esc => self.should_exit = true,
-            KeyCode::Down => self.select_next(),
-            KeyCode::Up => self.select_previous(),
-            KeyCode::Char(value) => {
-                self.search_str.push(value);
-            }
-            _ => {}
+        match self.state {
+            AppState::Import => match key.code {
+                KeyCode::Esc => self.should_exit = true,
+                KeyCode::Char(value) => {
+                    self.import_path.push(value);
+                }
+                KeyCode::Backspace => {
+                    self.import_path.pop();
+                }
+                KeyCode::Enter => self.initiate_import(),
+                KeyCode::Insert => self.set_search_state(),
+                _ => {}
+            },
+            AppState::Search => match key.code {
+                KeyCode::Esc => self.should_exit = true,
+                KeyCode::Down => self.select_next(),
+                KeyCode::Up => self.select_previous(),
+                KeyCode::Char(value) => {
+                    self.search_str.push(value);
+                }
+                KeyCode::Backspace => {
+                    self.search_str.pop();
+                }
+                KeyCode::Enter => self.open_bookmark(),
+                KeyCode::Insert => self.set_import_state(),
+                KeyCode::Delete => self.clear_search(),
+                _ => {}
+            },
         }
+    }
+
+    fn open_bookmark(&self) {
+        if let Some(i) = self.bookmark_list.state.selected() {
+            let items = self.search();
+            let item = &items[i];
+            open::that(&item.url).unwrap();
+        }
+    }
+
+    fn set_import_state(&mut self) {
+        self.state = AppState::Import;
+        self.title = "Enter import file path".to_string();
+    }
+
+    fn set_search_state(&mut self) {
+        self.state = AppState::Search;
+        self.search_str.clear();
+        self.title = "Search".to_string();
+    }
+
+    fn initiate_import(&mut self) {
+        if let Ok(path) = PathBuf::from_str(&self.import_path) {
+            if path.exists() {
+                if let Err(why) = bookmarks::import_from_file(path) {
+                    panic!("Failed to import bookmarks from file: {why}");
+                } else {
+                    self.import_path.clear();
+                }
+            } else {
+                panic!(
+                    "Could not find import file at path '{}'.",
+                    &self.import_path
+                );
+            }
+        } else {
+            panic!("Unable to construct the import file path.")
+        }
+    }
+
+    fn clear_search(&mut self) {
+        self.search_str.clear();
     }
 }
 
+/// Implement the Widget trait for App
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let [header_area, main_area, _] = Layout::default()
@@ -102,21 +177,37 @@ impl Widget for &mut App {
             ])
             .areas(area);
 
-        self.render_header(buf, header_area);
-        self.render_list(buf, main_area);
+        match self.state {
+            AppState::Import => self.render_import_header(buf, header_area),
+            AppState::Search => {
+                self.render_search_header(buf, header_area);
+                self.render_search_list(buf, main_area)
+            }
+        }
     }
 }
 
-// Rendering
+/// Functions for rendering UI
 impl App {
-    fn render_header(&self, buf: &mut Buffer, header_area: Rect) {
-        let search_block = Block::default().title("Search").borders(Borders::ALL);
+    fn render_search_header(&self, buf: &mut Buffer, area: Rect) {
+        let block = Block::default()
+            .title(self.title.as_str())
+            .borders(Borders::ALL);
         Paragraph::new(self.search_str.clone())
-            .block(search_block)
-            .render(header_area, buf);
+            .block(block)
+            .render(area, buf);
     }
 
-    fn render_list(&mut self, buf: &mut Buffer, main_area: Rect) {
+    fn render_import_header(&self, buf: &mut Buffer, area: Rect) {
+        let block = Block::default()
+            .title(self.title.as_str())
+            .borders(Borders::ALL);
+        Paragraph::new(self.import_path.clone())
+            .block(block)
+            .render(area, buf);
+    }
+
+    fn render_search_list(&mut self, buf: &mut Buffer, area: Rect) {
         let mut list_items = Vec::<ListItem>::new();
         let matches = self.search();
 
@@ -140,7 +231,7 @@ impl App {
             .highlight_symbol(">")
             .highlight_spacing(HighlightSpacing::Always);
 
-        StatefulWidget::render(list, main_area, buf, &mut self.bookmark_list.state);
+        StatefulWidget::render(list, area, buf, &mut self.bookmark_list.state);
     }
 }
 
