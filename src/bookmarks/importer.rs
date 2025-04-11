@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use super::resource_file_path;
 
 pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<ImportResult> {
-    let html = read_to_string(import_file).expect("failed to read content from import file.");
+    let html = read_to_string(import_file).expect("Failed to read content from import file.");
     let bookmarks = extract_bookmarks(html.as_str());
 
     save_bookmarks(&bookmarks)?;
@@ -23,7 +23,7 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
 
     let selector = match Selector::parse("a") {
         Ok(sel) => sel,
-        Err(why) => panic!("failed to parse 'a' tags in HTML document: {why}"),
+        Err(why) => panic!("Failed to parse 'a' tags in HTML document: {why}"),
     };
 
     let mut bookmarks: Vec<Bookmark> = Vec::new();
@@ -45,11 +45,11 @@ fn save_bookmarks(bookmarks: &Vec<Bookmark>) -> anyhow::Result<()> {
 
     let mut file = match File::create(path) {
         Ok(file) => file,
-        Err(why) => panic!("failed to create resource file: {why}"),
+        Err(why) => panic!("Failed to create resource file: {why}"),
     };
 
     if let Err(why) = file.write_all(json.as_bytes()) {
-        panic!("failed to write bookmarks to file: {why}");
+        panic!("Failed to write bookmarks to file: {why}");
     }
 
     Ok(())

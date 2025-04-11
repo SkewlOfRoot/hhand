@@ -10,7 +10,7 @@ pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
 
     let json = match read_to_string(path) {
         Ok(content) => content,
-        Err(why) => panic!("failed to read content from file: {why}"),
+        Err(why) => panic!("Failed to read content from file: {why}"),
     };
 
     if json.is_empty() {
@@ -19,7 +19,7 @@ pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
 
     let bookmarks = match serde_json::from_str::<Vec<Bookmark>>(&json) {
         Ok(b) => b,
-        Err(why) => panic!("failed to deserialize to bookmarks: {why}"),
+        Err(why) => panic!("Failed to deserialize to bookmarks: {why}"),
     };
 
     Ok(bookmarks)
