@@ -6,12 +6,15 @@ use std::path::PathBuf;
 
 use super::resource_file_path;
 
-pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<()> {
+pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<ImportResult> {
     let html = read_to_string(import_file).expect("failed to read content from import file.");
     let bookmarks = extract_bookmarks(html.as_str());
 
-    save_bookmarks(bookmarks)?;
-    Ok(())
+    save_bookmarks(&bookmarks)?;
+
+    Ok(ImportResult {
+        no_of_imported_items: bookmarks.len() as u32,
+    })
 }
 
 /// Extracts bookmarks from an HTML file.
@@ -35,7 +38,7 @@ fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
     bookmarks
 }
 
-fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
+fn save_bookmarks(bookmarks: &Vec<Bookmark>) -> anyhow::Result<()> {
     let json = serde_json::to_string(&bookmarks)?;
 
     let path = resource_file_path();
@@ -65,4 +68,8 @@ impl Bookmark {
             url: url.to_string(),
         }
     }
+}
+
+pub struct ImportResult {
+    pub no_of_imported_items: u32,
 }

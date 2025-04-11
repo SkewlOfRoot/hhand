@@ -159,18 +159,10 @@ impl App {
         match PathBuf::from_str(&self.import_path) {
             Ok(path) => {
                 if path.exists() {
-                    if let Err(why) = bookmarks::import_from_file(path) {
-                        panic!("Failed to import bookmarks from file: {why}");
-                    } else {
-                        self.import_path.clear();
-                        self.status_message = StatusMessage::Success(format!(
-                            "Successfully imported {} bookmarks.",
-                            self.bookmark_list.bookmarks.len()
-                        ));
-                    }
+                    self.import_bookmarks(path);
                 } else {
                     self.status_message = StatusMessage::Error(format!(
-                        "Could not find import file at path '{}'.",
+                        "Could not find import file at path '{}'",
                         &self.import_path
                     ));
                 }
@@ -178,6 +170,37 @@ impl App {
             Err(_) => {
                 self.status_message =
                     StatusMessage::Error("Unable to construct the import file path.".to_string());
+            }
+        }
+    }
+
+    fn import_bookmarks(&mut self, path: PathBuf) {
+        match bookmarks::import_from_file(path) {
+            Err(why) => {
+                self.status_message =
+                    StatusMessage::Error(format!("Failed to import bookmarks from file: {why}"));
+            }
+            Ok(res) => {
+                self.import_path.clear();
+                self.status_message = StatusMessage::Success(format!(
+                    "Successfully imported {} bookmarks.",
+                    res.no_of_imported_items
+                ));
+
+                self.reload_bookmarks();
+            }
+        }
+    }
+
+    fn reload_bookmarks(&mut self) {
+        match bookmarks::load_bookmarks() {
+            Err(why) => {
+                self.status_message = StatusMessage::Error(format!(
+                    "Failed to load bookmarks from resource file: {why}"
+                ));
+            }
+            Ok(res) => {
+                self.bookmark_list.bookmarks = res;
             }
         }
     }
