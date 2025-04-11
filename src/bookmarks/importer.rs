@@ -4,31 +4,7 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-const RESOURCE_FILE_NAME: &str = "hhand.resources.json";
-
-pub fn load_bookmarks() -> anyhow::Result<Vec<Bookmark>, anyhow::Error> {
-    let path = resource_file_path();
-
-    if !path.exists() {
-        File::create(resource_file_path()).expect("Could not create empty resource file.");
-    }
-
-    let json = match read_to_string(path) {
-        Ok(content) => content,
-        Err(why) => panic!("failed to read content from file: {why}"),
-    };
-
-    if json.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let bookmarks = match serde_json::from_str::<Vec<Bookmark>>(&json) {
-        Ok(b) => b,
-        Err(why) => panic!("failed to deserialize to bookmarks: {why}"),
-    };
-
-    Ok(bookmarks)
-}
+use super::resource_file_path;
 
 pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<()> {
     let html = read_to_string(import_file).expect("failed to read content from import file.");
@@ -74,16 +50,6 @@ fn save_bookmarks(bookmarks: Vec<Bookmark>) -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn resource_file_path() -> PathBuf {
-    let mut path = match std::env::current_exe() {
-        Ok(p) => p,
-        Err(why) => panic!("faild to get current EXE path: {why}"),
-    };
-    path.pop();
-    path.push(RESOURCE_FILE_NAME);
-    path
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

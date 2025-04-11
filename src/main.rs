@@ -1,13 +1,11 @@
-use std::io;
-
+use app::App;
 use crossterm::{
     event::EnableMouseCapture,
     execute,
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 use ratatui::{prelude::CrosstermBackend, Terminal};
-
-use app::App;
+use std::io;
 
 mod app;
 mod bookmarks;

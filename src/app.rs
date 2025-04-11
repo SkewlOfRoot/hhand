@@ -1,5 +1,3 @@
-use std::{path::PathBuf, str::FromStr};
-
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
@@ -19,8 +17,9 @@ use ratatui::{
     },
     DefaultTerminal,
 };
+use std::{path::PathBuf, str::FromStr};
 
-use crate::bookmarks::{self, Bookmark};
+use crate::bookmarks::*;
 
 const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
@@ -157,26 +156,29 @@ impl App {
     }
 
     fn initiate_import(&mut self) {
-        if let Ok(path) = PathBuf::from_str(&self.import_path) {
-            if path.exists() {
-                if let Err(why) = bookmarks::import_from_file(path) {
-                    panic!("Failed to import bookmarks from file: {why}");
+        match PathBuf::from_str(&self.import_path) {
+            Ok(path) => {
+                if path.exists() {
+                    if let Err(why) = importer::import_from_file(path) {
+                        panic!("Failed to import bookmarks from file: {why}");
+                    } else {
+                        self.import_path.clear();
+                        self.status_message = StatusMessage::Success(format!(
+                            "Successfully imported {} bookmarks.",
+                            self.bookmark_list.bookmarks.len()
+                        ));
+                    }
                 } else {
-                    self.import_path.clear();
-                    self.status_message = StatusMessage::Success(format!(
-                        "Successfully imported {} bookmarks.",
-                        self.bookmark_list.bookmarks.len()
+                    self.status_message = StatusMessage::Error(format!(
+                        "Could not find import file at path '{}'.",
+                        &self.import_path
                     ));
                 }
-            } else {
-                self.status_message = StatusMessage::Error(format!(
-                    "Could not find import file at path '{}'.",
-                    &self.import_path
-                ));
             }
-        } else {
-            self.status_message =
-                StatusMessage::Error("Unable to construct the import file path.".to_string());
+            Err(_) => {
+                self.status_message =
+                    StatusMessage::Error("Unable to construct the import file path.".to_string());
+            }
         }
     }
 
