@@ -19,7 +19,7 @@ use ratatui::{
 };
 use std::{path::PathBuf, str::FromStr};
 
-use crate::bookmarks::*;
+use crate::bookmarks::{self, *};
 
 const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
@@ -159,7 +159,7 @@ impl App {
         match PathBuf::from_str(&self.import_path) {
             Ok(path) => {
                 if path.exists() {
-                    if let Err(why) = importer::import_from_file(path) {
+                    if let Err(why) = bookmarks::import_from_file(path) {
                         panic!("Failed to import bookmarks from file: {why}");
                     } else {
                         self.import_path.clear();

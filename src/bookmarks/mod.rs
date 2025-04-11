@@ -1,7 +1,7 @@
-pub mod importer;
+mod importer;
 mod loader;
 
-pub use importer::Bookmark;
+pub use importer::{import_from_file, Bookmark};
 pub use loader::load_bookmarks;
 
 use std::path::PathBuf;
