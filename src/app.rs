@@ -1,4 +1,5 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use arboard::Clipboard;
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
@@ -99,7 +100,11 @@ impl App {
             AppState::Import => match key.code {
                 KeyCode::Esc => self.should_exit = true,
                 KeyCode::Char(value) => {
-                    self.import_path.push(value);
+                    if key.modifiers == KeyModifiers::CONTROL {
+                        self.paste_import_path();
+                    } else {
+                        self.import_path.push(value);
+                    }
                 }
                 KeyCode::Backspace => {
                     self.import_path.pop();
@@ -123,6 +128,20 @@ impl App {
                 KeyCode::Delete => self.clear_search(),
                 _ => {}
             },
+        }
+    }
+
+    fn paste_import_path(&mut self) {
+        match Clipboard::new() {
+            Err(why) => {
+                self.status_message =
+                    StatusMessage::Error(format!("Failed to initialize clipboard: {why}"))
+            }
+            Ok(mut clipboard) => {
+                if let Ok(text) = clipboard.get_text() {
+                    self.import_path.push_str(text.as_str());
+                }
+            }
         }
     }
 
