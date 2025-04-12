@@ -9,6 +9,7 @@ use std::io;
 
 mod app;
 mod bookmarks;
+mod ui;
 
 fn main() -> anyhow::Result<()> {
     // setup terminal
