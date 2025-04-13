@@ -2,10 +2,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{
-        palette::{
-            material::{BLUE, GREEN, RED},
-            tailwind::SLATE,
-        },
+        palette::material::{GREEN, RED},
         Color, Modifier, Style, Stylize,
     },
     symbols,
@@ -17,9 +14,19 @@ use ratatui::{
 
 use crate::app::{App, AppState, StatusMessage};
 
-const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
-const NORMAL_ROW_BG: Color = SLATE.c950;
-const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+const COLOR_TITLE_FG: Color = Color::Rgb(235, 219, 178);
+const COLOR_TITLE_BG: Color = Color::Rgb(26, 27, 38);
+const COLOR_FG: Color = Color::Rgb(184, 187, 38);
+const COLOR_BG: Color = Color::Rgb(40, 42, 54);
+const COLOR_SELECTED_FG: Color = Color::Rgb(184, 187, 38);
+const COLOR_SELECTED_BG: Color = Color::Rgb(250, 189, 47);
+
+const TODO_HEADER_STYLE: Style = Style::new().fg(COLOR_TITLE_FG).bg(COLOR_TITLE_BG);
+const SELECTED_STYLE: Style = Style::new()
+    .fg(COLOR_SELECTED_FG)
+    .bg(COLOR_SELECTED_BG)
+    .add_modifier(Modifier::BOLD);
+
 const SUCCESS_STYLE: Style = Style::new().fg(GREEN.c800).add_modifier(Modifier::BOLD);
 const ERROR_STYLE: Style = Style::new().fg(RED.c800).add_modifier(Modifier::BOLD);
 
@@ -73,7 +80,7 @@ impl App {
         for m in matches {
             list_items.push(ListItem::new(Line::from(Span::styled(
                 format!("{: <40} : {}", m.name, m.url),
-                Style::default().fg(Color::Yellow),
+                Style::default().fg(COLOR_FG),
             ))));
         }
 
@@ -82,7 +89,7 @@ impl App {
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(TODO_HEADER_STYLE)
-            .bg(NORMAL_ROW_BG);
+            .bg(COLOR_BG);
 
         let list = List::new(list_items)
             .block(block)
