@@ -1,18 +1,21 @@
 use arboard::Clipboard;
-use crossterm::event::{self, Event};
 use ratatui::{widgets::ListState, DefaultTerminal};
 use std::{path::PathBuf, str::FromStr};
 
-use crate::bookmarks::{self, *};
+use crate::{
+    bookmarks::{self, *},
+    ui::{Control, InputHandler},
+};
 
 pub struct App {
-    pub should_exit: bool,
+    should_exit: bool,
     pub bookmark_list: BookmarkList,
     pub search_str: String,
     pub state: AppState,
     pub title: String,
     pub import_path: String,
     pub status_message: StatusMessage,
+    input_handler: InputHandler,
 }
 
 pub enum AppState {
@@ -39,17 +42,39 @@ impl App {
             title: String::new(),
             import_path: String::new(),
             status_message: StatusMessage::None,
+            input_handler: InputHandler::new(),
         };
         app.set_search_state();
         app
     }
 
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
+    pub fn run(&mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
         while !self.should_exit {
-            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
-            if let Event::Key(key) = event::read()? {
-                self.handle_key(key);
-            };
+            terminal.draw(|frame| frame.render_widget(&mut *self, frame.area()))?;
+            let control: Control = self.input_handler.read();
+
+            match control {
+                Control::ShouldExit => self.should_exit = true,
+                Control::InputImportPath(val) => self.import_path.push_str(val.as_str()),
+                Control::PasteImportPath => self.paste_import_path(),
+                Control::Delete => match self.state {
+                    AppState::Search => {
+                        self.search_str.pop();
+                    }
+                    AppState::Import => {
+                        self.import_path.pop();
+                    }
+                },
+                Control::InitiateImport => self.initiate_import(),
+                Control::SetSearchState => self.set_search_state(),
+                Control::SetImportState => self.set_import_state(),
+                Control::SelectNextBookmark => self.select_next(),
+                Control::SelectPreviousBookmark => self.select_previous(),
+                Control::InputSearch(val) => self.search_str.push_str(val.as_str()),
+                Control::OpenBookmark => self.open_bookmark(),
+                Control::ClearSearch => self.clear_search(),
+                Control::None => {}
+            }
         }
         Ok(())
     }
@@ -68,7 +93,7 @@ impl App {
             .collect()
     }
 
-    pub fn paste_import_path(&mut self) {
+    fn paste_import_path(&mut self) {
         match Clipboard::new() {
             Err(why) => {
                 self.status_message =
@@ -82,15 +107,15 @@ impl App {
         }
     }
 
-    pub fn select_next(&mut self) {
+    fn select_next(&mut self) {
         self.bookmark_list.state.select_next();
     }
 
-    pub fn select_previous(&mut self) {
+    fn select_previous(&mut self) {
         self.bookmark_list.state.select_previous();
     }
 
-    pub fn open_bookmark(&self) {
+    fn open_bookmark(&self) {
         if let Some(i) = self.bookmark_list.state.selected() {
             let items = self.search();
             let item = &items[i];
@@ -98,20 +123,22 @@ impl App {
         }
     }
 
-    pub fn set_import_state(&mut self) {
+    fn set_import_state(&mut self) {
         self.state = AppState::Import;
+        self.input_handler.set_mode_import();
         self.title = "Enter import file path".to_string();
         self.status_message = StatusMessage::None;
     }
 
-    pub fn set_search_state(&mut self) {
+    fn set_search_state(&mut self) {
         self.state = AppState::Search;
+        self.input_handler.set_mode_search();
         self.search_str.clear();
         self.title = "Search".to_string();
         self.status_message = StatusMessage::None;
     }
 
-    pub fn initiate_import(&mut self) {
+    fn initiate_import(&mut self) {
         match PathBuf::from_str(&self.import_path) {
             Ok(path) => {
                 if path.exists() {
@@ -130,7 +157,7 @@ impl App {
         }
     }
 
-    pub fn import_bookmarks(&mut self, path: PathBuf) {
+    fn import_bookmarks(&mut self, path: PathBuf) {
         match bookmarks::import_from_file(path) {
             Err(why) => {
                 self.status_message =
@@ -148,7 +175,7 @@ impl App {
         }
     }
 
-    pub fn reload_bookmarks(&mut self) {
+    fn reload_bookmarks(&mut self) {
         match bookmarks::load_bookmarks() {
             Err(why) => {
                 self.status_message = StatusMessage::Error(format!(
@@ -161,7 +188,7 @@ impl App {
         }
     }
 
-    pub fn clear_search(&mut self) {
+    fn clear_search(&mut self) {
         self.search_str.clear();
     }
 }
