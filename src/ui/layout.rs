@@ -121,10 +121,10 @@ impl App {
             ],
         };
 
-        let left_block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
+        let block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
         Paragraph::new(Line::from(mode_spans))
             .style(Style::default().bg(COLOR_BG).bold())
-            .block(left_block)
+            .block(block)
             .render(area, buf);
     }
 
@@ -140,10 +140,10 @@ impl App {
             },
         ];
 
-        let right_block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
+        let block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
         Paragraph::new(Line::from(status_spans))
             .style(Style::default().bg(COLOR_BG).bold())
-            .block(right_block)
+            .block(block)
             .render(area, buf);
     }
 }
