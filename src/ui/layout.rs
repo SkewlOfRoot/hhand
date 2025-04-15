@@ -1,34 +1,27 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{
-        palette::material::{GREEN, RED},
-        Color, Modifier, Style, Stylize,
-    },
-    symbols,
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, Paragraph, StatefulWidget, Widget,
-    },
+    widgets::{Block, HighlightSpacing, List, ListItem, Paragraph, StatefulWidget, Widget},
 };
 
 use crate::app::{App, AppState, StatusMessage};
 
-const COLOR_TITLE_FG: Color = Color::Rgb(235, 219, 178);
-const COLOR_TITLE_BG: Color = Color::Rgb(26, 27, 38);
-const COLOR_FG: Color = Color::Rgb(184, 187, 38);
+const COLOR_TITLE_FG: Color = Color::Rgb(139, 233, 253);
+const COLOR_FG: Color = Color::Rgb(80, 250, 123);
 const COLOR_BG: Color = Color::Rgb(40, 42, 54);
-const COLOR_SELECTED_FG: Color = Color::Rgb(184, 187, 38);
-const COLOR_SELECTED_BG: Color = Color::Rgb(250, 189, 47);
+const COLOR_SELECTED_BG: Color = Color::Rgb(189, 147, 249);
+const COLOR_BORDER: Color = Color::Rgb(68, 71, 90);
+const COLOR_ACCENT1: Color = Color::Rgb(80, 250, 123); // Green
+const COLOR_ACCENT2: Color = Color::Rgb(255, 121, 198); // Pink
+const COLOR_SUCCESS: Color = Color::Rgb(80, 250, 123);
+const COLOR_ERROR: Color = Color::Rgb(255, 85, 85);
 
-const TODO_HEADER_STYLE: Style = Style::new().fg(COLOR_TITLE_FG).bg(COLOR_TITLE_BG);
 const SELECTED_STYLE: Style = Style::new()
-    .fg(COLOR_SELECTED_FG)
+    .fg(COLOR_FG)
     .bg(COLOR_SELECTED_BG)
     .add_modifier(Modifier::BOLD);
-
-const SUCCESS_STYLE: Style = Style::new().fg(GREEN.c800).add_modifier(Modifier::BOLD);
-const ERROR_STYLE: Style = Style::new().fg(RED.c800).add_modifier(Modifier::BOLD);
 
 /// Implement the Widget trait for App
 impl Widget for &mut App {
@@ -56,20 +49,18 @@ impl Widget for &mut App {
 /// Functions for rendering UI
 impl App {
     fn render_search_header(&self, buf: &mut Buffer, area: Rect) {
-        let block = Block::default()
-            .title(self.title.as_str())
-            .borders(Borders::ALL);
+        let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.search_str.clone())
             .block(block)
+            .style(Style::default().bg(COLOR_BG))
             .render(area, buf);
     }
 
     fn render_import_header(&self, buf: &mut Buffer, area: Rect) {
-        let block = Block::default()
-            .title(self.title.as_str())
-            .borders(Borders::ALL);
+        let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.import_path.clone())
             .block(block)
+            .style(Style::default().bg(COLOR_BG))
             .render(area, buf);
     }
 
@@ -84,41 +75,75 @@ impl App {
             ))));
         }
 
-        let block = Block::new()
-            .title(Line::raw("Bookmarks").left_aligned())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(TODO_HEADER_STYLE)
+        let block = Block::bordered()
+            .title(Line::raw("Bookmarks ").left_aligned())
+            .border_style(Style::default().fg(COLOR_TITLE_FG).bg(COLOR_BG))
             .bg(COLOR_BG);
 
         let list = List::new(list_items)
             .block(block)
             .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
+            .highlight_symbol("> ")
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, area, buf, &mut self.bookmark_list.state);
     }
 
     fn render_footer(&self, buf: &mut Buffer, area: Rect) {
-        let message: &str;
-        let style;
+        let [left_area, right_area] = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .areas(area);
 
-        match &self.status_message {
-            StatusMessage::Success(msg) => {
-                message = msg;
-                style = SUCCESS_STYLE;
-            }
-            StatusMessage::Error(err) => {
-                message = err;
-                style = ERROR_STYLE;
-            }
-            StatusMessage::None => {
-                message = "";
-                style = SUCCESS_STYLE;
-            }
-        }
+        self.render_left_footer(buf, left_area);
+        self.render_right_footer(buf, right_area);
+    }
 
-        Paragraph::new(message).style(style).render(area, buf);
+    fn render_left_footer(&self, buf: &mut Buffer, area: Rect) {
+        let mode_spans = match self.state {
+            AppState::Search => {
+                vec![
+                    Span::styled("Search mode", Style::default().fg(COLOR_ACCENT1)),
+                    Span::styled(" | ", Style::default().fg(Color::White)),
+                    Span::styled(
+                        "(ESC) exit / (INS) switch mode / ↑↓ select bookmark / (ENTER) open bookmark",
+                        Style::default().fg(COLOR_ACCENT2),
+                    ),
+                ]
+            }
+            AppState::Import => vec![
+                Span::styled("Import mode", Style::default().fg(COLOR_ACCENT1)),
+                Span::styled(" | ", Style::default().fg(Color::White)),
+                Span::styled(
+                    "(ESC) exit / (INS) switch mode / (ENTER) init import",
+                    Style::default().fg(COLOR_ACCENT2),
+                ),
+            ],
+        };
+
+        let left_block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
+        Paragraph::new(Line::from(mode_spans))
+            .style(Style::default().bg(COLOR_BG).bold())
+            .block(left_block)
+            .render(area, buf);
+    }
+
+    fn render_right_footer(&self, buf: &mut Buffer, area: Rect) {
+        let status_spans = vec![
+            Span::styled("Status: ", Style::default()),
+            match &self.status_message {
+                StatusMessage::Success(msg) => {
+                    Span::styled(msg, Style::default().fg(COLOR_SUCCESS))
+                }
+                StatusMessage::Error(err) => Span::styled(err, Style::default().fg(COLOR_ERROR)),
+                StatusMessage::None => Span::styled("OK", Style::default().fg(COLOR_SUCCESS)),
+            },
+        ];
+
+        let right_block = Block::bordered().fg(COLOR_BORDER).bg(COLOR_BG);
+        Paragraph::new(Line::from(status_spans))
+            .style(Style::default().bg(COLOR_BG).bold())
+            .block(right_block)
+            .render(area, buf);
     }
 }

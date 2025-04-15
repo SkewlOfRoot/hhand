@@ -134,7 +134,7 @@ impl App {
         self.state = AppState::Search;
         self.input_handler.set_mode_search();
         self.search_str.clear();
-        self.title = "Search".to_string();
+        self.title = "Search for bookmark".to_string();
         self.status_message = StatusMessage::None;
     }
 
@@ -170,12 +170,12 @@ impl App {
                     res.no_of_imported_items
                 ));
 
-                self.reload_bookmarks();
+                self.load_bookmarks();
             }
         }
     }
 
-    fn reload_bookmarks(&mut self) {
+    fn load_bookmarks(&mut self) {
         match bookmarks::load_bookmarks() {
             Err(why) => {
                 self.status_message = StatusMessage::Error(format!(
