@@ -41,6 +41,9 @@ impl Widget for &mut App {
                 self.render_search_header(buf, header_area);
                 self.render_search_list(buf, main_area)
             }
+            AppState::App => {
+                self.render_app_header(buf, header_area);
+            }
         }
         self.render_footer(buf, footer_area);
     }
@@ -50,7 +53,7 @@ impl Widget for &mut App {
 impl App {
     fn render_search_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
-        Paragraph::new(self.search_str.clone())
+        Paragraph::new(self.input_str.clone())
             .block(block)
             .style(Style::default().bg(COLOR_BG))
             .render(area, buf);
@@ -58,7 +61,15 @@ impl App {
 
     fn render_import_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
-        Paragraph::new(self.import_path.clone())
+        Paragraph::new(self.input_str.clone())
+            .block(block)
+            .style(Style::default().bg(COLOR_BG))
+            .render(area, buf);
+    }
+
+    fn render_app_header(&self, buf: &mut Buffer, area: Rect) {
+        let block = Block::bordered().title(self.title.as_str());
+        Paragraph::new(self.input_str.clone())
             .block(block)
             .style(Style::default().bg(COLOR_BG))
             .render(area, buf);
@@ -103,19 +114,27 @@ impl App {
         let mode_spans = match self.state {
             AppState::Search => {
                 vec![
-                    Span::styled("Search mode", Style::default().fg(COLOR_ACCENT1)),
-                    Span::styled(" | ", Style::default().fg(Color::White)),
-                    Span::styled(
-                        "(ESC) exit / (INS) switch mode / ↑↓ select bookmark / (ENTER) open bookmark",
-                        Style::default().fg(COLOR_ACCENT2),
-                    ),
-                ]
+                            Span::styled("Search mode", Style::default().fg(COLOR_ACCENT1)),
+                            Span::styled(" | ", Style::default().fg(Color::White)),
+                            Span::styled(
+                                "(ESC) exit / (INS) switch mode / ↑↓ select bookmark / (ENTER) open bookmark",
+                                Style::default().fg(COLOR_ACCENT2),
+                            ),
+                        ]
             }
             AppState::Import => vec![
                 Span::styled("Import mode", Style::default().fg(COLOR_ACCENT1)),
                 Span::styled(" | ", Style::default().fg(Color::White)),
                 Span::styled(
                     "(ESC) exit / (INS) switch mode / (ENTER) init import",
+                    Style::default().fg(COLOR_ACCENT2),
+                ),
+            ],
+            AppState::App => vec![
+                Span::styled("App mode", Style::default().fg(COLOR_ACCENT1)),
+                Span::styled(" | ", Style::default().fg(Color::White)),
+                Span::styled(
+                    "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select item / (ENTER) execute",
                     Style::default().fg(COLOR_ACCENT2),
                 ),
             ],

@@ -10,16 +10,16 @@ use crate::{
 pub struct App {
     should_exit: bool,
     pub bookmark_list: BookmarkList,
-    pub search_str: String,
+    pub input_str: String,
     pub state: AppState,
     pub title: String,
-    pub import_path: String,
     pub status_message: StatusMessage,
     input_handler: InputHandler,
 }
 
 pub enum AppState {
     Search,
+    App,
     Import,
 }
 
@@ -37,10 +37,9 @@ impl App {
                 bookmarks,
                 state: ListState::default(),
             },
-            search_str: String::new(),
+            input_str: String::new(),
             state: AppState::Search,
             title: String::new(),
-            import_path: String::new(),
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
         };
@@ -55,24 +54,19 @@ impl App {
 
             match control {
                 Control::ShouldExit => self.should_exit = true,
-                Control::InputImportPath(val) => self.import_path.push_str(val.as_str()),
-                Control::PasteImportPath => self.paste_import_path(),
-                Control::Delete => match self.state {
-                    AppState::Search => {
-                        self.search_str.pop();
-                    }
-                    AppState::Import => {
-                        self.import_path.pop();
-                    }
-                },
+                Control::Input(val) => self.input_str.push_str(val.as_str()),
+                Control::PasteInput => self.paste_to_input(),
+                Control::Delete => {
+                    self.input_str.pop();
+                }
                 Control::InitiateImport => self.initiate_import(),
                 Control::SetSearchState => self.set_search_state(),
                 Control::SetImportState => self.set_import_state(),
                 Control::SelectNextBookmark => self.select_next(),
                 Control::SelectPreviousBookmark => self.select_previous(),
-                Control::InputSearch(val) => self.search_str.push_str(val.as_str()),
                 Control::OpenBookmark => self.open_bookmark(),
-                Control::ClearSearch => self.clear_search(),
+                Control::Clear => self.clear_input(),
+                Control::SetAppState => self.set_app_state(),
                 Control::None => {}
             }
         }
@@ -84,16 +78,16 @@ impl App {
             .bookmarks
             .iter()
             .filter(|b| {
-                !&self.search_str.is_empty()
+                !&self.input_str.is_empty()
                     && b.name
                         .to_uppercase()
-                        .contains(&self.search_str.to_uppercase())
+                        .contains(&self.input_str.to_uppercase())
             })
             .cloned()
             .collect()
     }
 
-    fn paste_import_path(&mut self) {
+    fn paste_to_input(&mut self) {
         match Clipboard::new() {
             Err(why) => {
                 self.status_message =
@@ -101,7 +95,7 @@ impl App {
             }
             Ok(mut clipboard) => {
                 if let Ok(text) = clipboard.get_text() {
-                    self.import_path.push_str(text.as_str());
+                    self.input_str.push_str(text.as_str());
                 }
             }
         }
@@ -126,6 +120,7 @@ impl App {
     fn set_import_state(&mut self) {
         self.state = AppState::Import;
         self.input_handler.set_mode_import();
+        self.input_str.clear();
         self.title = "Enter import file path".to_string();
         self.status_message = StatusMessage::None;
     }
@@ -133,20 +128,28 @@ impl App {
     fn set_search_state(&mut self) {
         self.state = AppState::Search;
         self.input_handler.set_mode_search();
-        self.search_str.clear();
+        self.input_str.clear();
         self.title = "Search for bookmark".to_string();
         self.status_message = StatusMessage::None;
     }
 
+    fn set_app_state(&mut self) {
+        self.state = AppState::App;
+        self.input_handler.set_mode_app();
+        self.input_str.clear();
+        self.title = "Enter app command".to_string();
+        self.status_message = StatusMessage::None;
+    }
+
     fn initiate_import(&mut self) {
-        match PathBuf::from_str(&self.import_path) {
+        match PathBuf::from_str(&self.input_str) {
             Ok(path) => {
                 if path.exists() {
                     self.import_bookmarks(path);
                 } else {
                     self.status_message = StatusMessage::Error(format!(
                         "Could not find import file at path '{}'",
-                        &self.import_path
+                        &self.input_str
                     ));
                 }
             }
@@ -164,7 +167,7 @@ impl App {
                     StatusMessage::Error(format!("Failed to import bookmarks from file: {why}"));
             }
             Ok(res) => {
-                self.import_path.clear();
+                self.input_str.clear();
                 self.status_message = StatusMessage::Success(format!(
                     "Successfully imported {} bookmarks.",
                     res.no_of_imported_items
@@ -188,8 +191,8 @@ impl App {
         }
     }
 
-    fn clear_search(&mut self) {
-        self.search_str.clear();
+    fn clear_input(&mut self) {
+        self.input_str.clear();
     }
 }
 
