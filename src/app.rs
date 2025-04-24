@@ -1,9 +1,8 @@
 use arboard::Clipboard;
 use ratatui::{widgets::ListState, DefaultTerminal};
-use std::{path::PathBuf, str::FromStr};
 
 use crate::{
-    bookmarks::{self, *},
+    bookmarks::*,
     ui::{Control, InputHandler},
 };
 
@@ -20,7 +19,6 @@ pub struct App {
 pub enum AppState {
     Search,
     App,
-    Import,
 }
 
 pub enum StatusMessage {
@@ -59,9 +57,7 @@ impl App {
                 Control::Delete => {
                     self.input_str.pop();
                 }
-                Control::InitiateImport => self.initiate_import(),
                 Control::SetSearchState => self.set_search_state(),
-                Control::SetImportState => self.set_import_state(),
                 Control::SelectNextBookmark => self.select_next(),
                 Control::SelectPreviousBookmark => self.select_previous(),
                 Control::OpenBookmark => self.open_bookmark(),
@@ -117,14 +113,6 @@ impl App {
         }
     }
 
-    fn set_import_state(&mut self) {
-        self.state = AppState::Import;
-        self.input_handler.set_mode_import();
-        self.input_str.clear();
-        self.title = "Enter import file path".to_string();
-        self.status_message = StatusMessage::None;
-    }
-
     fn set_search_state(&mut self) {
         self.state = AppState::Search;
         self.input_handler.set_mode_search();
@@ -139,56 +127,6 @@ impl App {
         self.input_str.clear();
         self.title = "Enter app command".to_string();
         self.status_message = StatusMessage::None;
-    }
-
-    fn initiate_import(&mut self) {
-        match PathBuf::from_str(&self.input_str) {
-            Ok(path) => {
-                if path.exists() {
-                    self.import_bookmarks(path);
-                } else {
-                    self.status_message = StatusMessage::Error(format!(
-                        "Could not find import file at path '{}'",
-                        &self.input_str
-                    ));
-                }
-            }
-            Err(_) => {
-                self.status_message =
-                    StatusMessage::Error("Unable to construct the import file path.".to_string());
-            }
-        }
-    }
-
-    fn import_bookmarks(&mut self, path: PathBuf) {
-        match bookmarks::import_from_file(path) {
-            Err(why) => {
-                self.status_message =
-                    StatusMessage::Error(format!("Failed to import bookmarks from file: {why}"));
-            }
-            Ok(res) => {
-                self.input_str.clear();
-                self.status_message = StatusMessage::Success(format!(
-                    "Successfully imported {} bookmarks.",
-                    res.no_of_imported_items
-                ));
-
-                self.load_bookmarks();
-            }
-        }
-    }
-
-    fn load_bookmarks(&mut self) {
-        match bookmarks::load_bookmarks() {
-            Err(why) => {
-                self.status_message = StatusMessage::Error(format!(
-                    "Failed to load bookmarks from resource file: {why}"
-                ));
-            }
-            Ok(res) => {
-                self.bookmark_list.bookmarks = res;
-            }
-        }
     }
 
     fn clear_input(&mut self) {

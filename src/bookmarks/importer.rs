@@ -1,58 +1,63 @@
-use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use std::fs::{read_to_string, File};
-use std::io::Write;
-use std::path::PathBuf;
+use std::{env, fs, path::PathBuf, str::FromStr};
 
-use super::resource_file_path;
-
-pub fn import_from_file(import_file: PathBuf) -> anyhow::Result<ImportResult> {
-    let html = read_to_string(import_file).expect("Failed to read content from import file.");
-    let bookmarks = extract_bookmarks(html.as_str());
-
-    save_bookmarks(&bookmarks)?;
-
-    Ok(ImportResult {
-        no_of_imported_items: bookmarks.len() as u32,
-    })
-}
-
-/// Extracts bookmarks from an HTML file.
-fn extract_bookmarks(html: &str) -> Vec<Bookmark> {
-    let document = Html::parse_document(html);
-
-    let selector = match Selector::parse("a") {
-        Ok(sel) => sel,
-        Err(why) => panic!("Failed to parse 'a' tags in HTML document: {why}"),
+pub fn import_from_chrome() -> anyhow::Result<Vec<Bookmark>> {
+    let local_app_data_path = match env::var("LOCALAPPDATA") {
+        Ok(path) => path,
+        Err(why) => panic!("{}", format!("Couldn't read LOCALAPPDATA: {}", why)),
     };
 
+    let mut local_app_data_path = match PathBuf::from_str(&local_app_data_path) {
+        Ok(path) => path,
+        Err(why) => panic!(
+            "{}",
+            format!("Couldn't convert LOCALAPPDATA to path: {}", why)
+        ),
+    };
+
+    local_app_data_path.push("Google/Chrome/User Data/Profile 1/Bookmarks");
+
+    if !local_app_data_path.exists() {
+        panic!(
+            "{}",
+            format!("The path {:#?} does not exist.", local_app_data_path)
+        );
+    }
+
+    let content = fs::read_to_string(local_app_data_path).expect("Failed to read bookmarks file");
+
+    let chrome_bookmarks: ChromeRoot =
+        serde_json::from_str(&content).expect("Failed to parse JSON");
+
+    let bookmarks: Vec<Bookmark> = unpack_chrome_roots(&chrome_bookmarks);
+    Ok(bookmarks)
+}
+
+fn unpack_chrome_roots(root: &ChromeRoot) -> Vec<Bookmark> {
+    let mut bookmarks: Vec<Bookmark> = Vec::new();
+    bookmarks.extend(unpack_chrome_bookmarks(&root.roots.bookmark_bar));
+    bookmarks.extend(unpack_chrome_bookmarks(&root.roots.other));
+    bookmarks.extend(unpack_chrome_bookmarks(&root.roots.synced));
+    bookmarks
+}
+
+fn unpack_chrome_bookmarks(bookmark_item: &ChromeBookmarkItem) -> Vec<Bookmark> {
     let mut bookmarks: Vec<Bookmark> = Vec::new();
 
-    for element in document.select(&selector) {
-        if let Some(href) = element.value().attr("href") {
-            let name = element.text().collect::<String>().trim().to_string();
-            bookmarks.push(Bookmark::new(name.as_str(), href));
+    match &bookmark_item.url {
+        Some(url) => bookmarks.push(Bookmark::new(&bookmark_item.name, url)),
+        None => {
+            if let Some(children) = &bookmark_item.children {
+                for child in children {
+                    for bookmark in unpack_chrome_bookmarks(child) {
+                        bookmarks.push(bookmark);
+                    }
+                }
+            }
         }
     }
 
     bookmarks
-}
-
-fn save_bookmarks(bookmarks: &Vec<Bookmark>) -> anyhow::Result<()> {
-    let json = serde_json::to_string(&bookmarks)?;
-
-    let path = resource_file_path();
-
-    let mut file = match File::create(path) {
-        Ok(file) => file,
-        Err(why) => panic!("Failed to create resource file: {why}"),
-    };
-
-    if let Err(why) = file.write_all(json.as_bytes()) {
-        panic!("Failed to write bookmarks to file: {why}");
-    }
-
-    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -70,6 +75,32 @@ impl Bookmark {
     }
 }
 
-pub struct ImportResult {
-    pub no_of_imported_items: u32,
+#[derive(Serialize, Deserialize, Debug)]
+struct ChromeRoot {
+    roots: ChromeBookmarks,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ChromeBookmarks {
+    bookmark_bar: ChromeBookmarkItem,
+    other: ChromeBookmarkItem,
+    synced: ChromeBookmarkItem,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ChromeBookmarkItem {
+    name: String,
+    url: Option<String>,
+    children: Option<Vec<ChromeBookmarkItem>>,
+}
+
+#[test]
+
+fn test_import_from_chrome() {
+    match import_from_chrome() {
+        Err(_) => {}
+        Ok(bookmarks) => {
+            assert!(!bookmarks.is_empty());
+        }
+    }
 }

@@ -36,7 +36,6 @@ impl Widget for &mut App {
             .areas(area);
 
         match self.state {
-            AppState::Import => self.render_import_header(buf, header_area),
             AppState::Search => {
                 self.render_search_header(buf, header_area);
                 self.render_search_list(buf, main_area)
@@ -52,14 +51,6 @@ impl Widget for &mut App {
 /// Functions for rendering UI
 impl App {
     fn render_search_header(&self, buf: &mut Buffer, area: Rect) {
-        let block = Block::bordered().title(self.title.as_str());
-        Paragraph::new(self.input_str.clone())
-            .block(block)
-            .style(Style::default().bg(COLOR_BG))
-            .render(area, buf);
-    }
-
-    fn render_import_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.input_str.clone())
             .block(block)
@@ -117,19 +108,11 @@ impl App {
                             Span::styled("Search mode", Style::default().fg(COLOR_ACCENT1)),
                             Span::styled(" | ", Style::default().fg(Color::White)),
                             Span::styled(
-                                "(ESC) exit / (INS) switch mode / ↑↓ select bookmark / (ENTER) open bookmark",
+                                "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select bookmark / (ENTER) open bookmark",
                                 Style::default().fg(COLOR_ACCENT2),
                             ),
                         ]
             }
-            AppState::Import => vec![
-                Span::styled("Import mode", Style::default().fg(COLOR_ACCENT1)),
-                Span::styled(" | ", Style::default().fg(Color::White)),
-                Span::styled(
-                    "(ESC) exit / (INS) switch mode / (ENTER) init import",
-                    Style::default().fg(COLOR_ACCENT2),
-                ),
-            ],
             AppState::App => vec![
                 Span::styled("App mode", Style::default().fg(COLOR_ACCENT1)),
                 Span::styled(" | ", Style::default().fg(Color::White)),

@@ -14,13 +14,18 @@ mod ui;
 fn main() -> anyhow::Result<()> {
     // setup terminal
     enable_raw_mode()?;
-    let mut stdout = io::stdout(); // This is a special case. Normally using stdout is fine
+    let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    let bookmarks = bookmarks::load_bookmarks()?;
+    let bookmarks = match bookmarks::import_from_chrome() {
+        Err(_) => {
+            panic!("Failed to import Chrome bookmarks.")
+        }
+        Ok(b) => b,
+    };
 
     let app_result = App::new(bookmarks).run(terminal);
     ratatui::restore();

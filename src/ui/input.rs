@@ -5,9 +5,7 @@ pub enum Control {
     Input(String),
     PasteInput,
     Delete,
-    InitiateImport,
     SetSearchState,
-    SetImportState,
     SetAppState,
     SelectNextBookmark,
     SelectPreviousBookmark,
@@ -19,7 +17,6 @@ pub enum Control {
 enum Mode {
     Search,
     App,
-    Import,
 }
 
 pub struct InputHandler {
@@ -53,18 +50,11 @@ impl InputHandler {
             KeyCode::Backspace => Control::Delete,
             KeyCode::Delete => Control::Clear,
             _ => match self.mode {
-                Mode::Import => match key.code {
-                    KeyCode::Enter => Control::InitiateImport,
-                    KeyCode::Insert => Control::SetSearchState,
-                    _ => Control::None,
-                },
                 Mode::Search => match key.code {
                     KeyCode::Down => Control::SelectNextBookmark,
                     KeyCode::Up => Control::SelectPreviousBookmark,
                     KeyCode::Char(value) => Control::Input(value.to_string()),
                     KeyCode::Enter => Control::OpenBookmark,
-                    KeyCode::Insert => Control::SetImportState,
-
                     KeyCode::PageDown => Control::SetAppState,
                     KeyCode::PageUp => Control::SetAppState,
                     _ => Control::None,
@@ -81,10 +71,6 @@ impl InputHandler {
 
     pub fn set_mode_search(&mut self) {
         self.mode = Mode::Search;
-    }
-
-    pub fn set_mode_import(&mut self) {
-        self.mode = Mode::Import;
     }
 
     pub fn set_mode_app(&mut self) {
