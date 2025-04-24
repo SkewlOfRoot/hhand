@@ -118,7 +118,10 @@ impl App {
         self.input_handler.set_mode_search();
         self.input_str.clear();
         self.title = "Search for bookmark".to_string();
-        self.status_message = StatusMessage::None;
+        self.status_message = StatusMessage::Success(format!(
+            "Loaded {} bookmarks",
+            self.bookmark_list.bookmarks.len()
+        ));
     }
 
     fn set_app_state(&mut self) {
