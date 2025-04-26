@@ -17,8 +17,8 @@ pub struct App {
 }
 
 pub enum AppState {
-    Search,
-    App,
+    Bookmarks,
+    Apps,
 }
 
 pub enum StatusMessage {
@@ -36,12 +36,12 @@ impl App {
                 state: ListState::default(),
             },
             input_str: String::new(),
-            state: AppState::Search,
+            state: AppState::Bookmarks,
             title: String::new(),
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
         };
-        app.set_search_state();
+        app.set_bookmarks_state();
         app
     }
 
@@ -57,19 +57,19 @@ impl App {
                 Control::Delete => {
                     self.input_str.pop();
                 }
-                Control::SetSearchState => self.set_search_state(),
+                Control::SetSearchState => self.set_bookmarks_state(),
                 Control::SelectNextBookmark => self.select_next(),
                 Control::SelectPreviousBookmark => self.select_previous(),
                 Control::OpenBookmark => self.open_bookmark(),
                 Control::Clear => self.clear_input(),
-                Control::SetAppState => self.set_app_state(),
+                Control::SetAppState => self.set_apps_state(),
                 Control::None => {}
             }
         }
         Ok(())
     }
 
-    pub fn search(&self) -> Vec<Bookmark> {
+    pub fn search_bookmarks(&self) -> Vec<Bookmark> {
         self.bookmark_list
             .bookmarks
             .iter()
@@ -81,6 +81,16 @@ impl App {
             })
             .cloned()
             .collect()
+    }
+
+    pub fn process_app(&self) {
+
+        // match self.input_str.as_str() {
+        //     "#vs" => {
+
+        //     }
+        //     _ => {}
+        // }
     }
 
     fn paste_to_input(&mut self) {
@@ -107,14 +117,14 @@ impl App {
 
     fn open_bookmark(&self) {
         if let Some(i) = self.bookmark_list.state.selected() {
-            let items = self.search();
+            let items = self.search_bookmarks();
             let item = &items[i];
             open::that(&item.url).unwrap();
         }
     }
 
-    fn set_search_state(&mut self) {
-        self.state = AppState::Search;
+    fn set_bookmarks_state(&mut self) {
+        self.state = AppState::Bookmarks;
         self.input_handler.set_mode_search();
         self.input_str.clear();
         self.title = "Search for bookmark".to_string();
@@ -124,8 +134,8 @@ impl App {
         ));
     }
 
-    fn set_app_state(&mut self) {
-        self.state = AppState::App;
+    fn set_apps_state(&mut self) {
+        self.state = AppState::Apps;
         self.input_handler.set_mode_app();
         self.input_str.clear();
         self.title = "Enter app command".to_string();

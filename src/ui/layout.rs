@@ -36,12 +36,12 @@ impl Widget for &mut App {
             .areas(area);
 
         match self.state {
-            AppState::Search => {
-                self.render_search_header(buf, header_area);
-                self.render_search_list(buf, main_area)
+            AppState::Bookmarks => {
+                self.render_bookmarks_header(buf, header_area);
+                self.render_bookmarks_list(buf, main_area)
             }
-            AppState::App => {
-                self.render_app_header(buf, header_area);
+            AppState::Apps => {
+                self.render_apps_header(buf, header_area);
             }
         }
         self.render_footer(buf, footer_area);
@@ -50,7 +50,7 @@ impl Widget for &mut App {
 
 /// Functions for rendering UI
 impl App {
-    fn render_search_header(&self, buf: &mut Buffer, area: Rect) {
+    fn render_bookmarks_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.input_str.clone())
             .block(block)
@@ -58,7 +58,7 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_app_header(&self, buf: &mut Buffer, area: Rect) {
+    fn render_apps_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.input_str.clone())
             .block(block)
@@ -66,9 +66,9 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_search_list(&mut self, buf: &mut Buffer, area: Rect) {
+    fn render_bookmarks_list(&mut self, buf: &mut Buffer, area: Rect) {
         let mut list_items = Vec::<ListItem>::new();
-        let matches = self.search();
+        let matches = self.search_bookmarks();
 
         for m in matches {
             list_items.push(ListItem::new(Line::from(Span::styled(
@@ -103,7 +103,7 @@ impl App {
 
     fn render_left_footer(&self, buf: &mut Buffer, area: Rect) {
         let mode_spans = match self.state {
-            AppState::Search => {
+            AppState::Bookmarks => {
                 vec![
                             Span::styled("Search mode", Style::default().fg(COLOR_ACCENT1)),
                             Span::styled(" | ", Style::default().fg(Color::White)),
@@ -113,7 +113,7 @@ impl App {
                             ),
                         ]
             }
-            AppState::App => vec![
+            AppState::Apps => vec![
                 Span::styled("App mode", Style::default().fg(COLOR_ACCENT1)),
                 Span::styled(" | ", Style::default().fg(Color::White)),
                 Span::styled(
