@@ -1,11 +1,11 @@
 use app::App;
 use crossterm::{
-    event::EnableMouseCapture,
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{enable_raw_mode, EnterAlternateScreen},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{prelude::CrosstermBackend, Terminal};
-use std::io;
+use std::io::{self, stdout};
 
 mod app;
 mod bookmarks;
@@ -28,6 +28,13 @@ fn main() -> anyhow::Result<()> {
     };
 
     let app_result = App::new(bookmarks).run(terminal);
-    ratatui::restore();
+    cleanup_terminal()?;
     app_result
+}
+
+// Use this function to cleanup instead of ratatui::restore() as we need to call DisableMouseCapture when running application on Linux.
+fn cleanup_terminal() -> io::Result<()> {
+    disable_raw_mode()?;
+    execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+    Ok(())
 }
