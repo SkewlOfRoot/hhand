@@ -1,21 +1,36 @@
 use serde::{Deserialize, Serialize};
-use std::{env, fs, path::PathBuf, str::FromStr};
+use std::{
+    env::{self},
+    fs,
+    path::PathBuf,
+    str::FromStr,
+};
 
 pub fn import_from_chrome() -> anyhow::Result<Vec<Bookmark>> {
-    let local_app_data_path = match env::var("LOCALAPPDATA") {
-        Ok(path) => path,
-        Err(why) => panic!("{}", format!("Couldn't read LOCALAPPDATA: {}", why)),
-    };
+    let local_app_data_path = if cfg!(target_os = "windows") {
+        let path = match env::var("LOCALAPPDATA") {
+            Ok(path) => path,
+            Err(why) => panic!("{}", format!("Couldn't read LOCALAPPDATA: {}", why)),
+        };
 
-    let mut local_app_data_path = match PathBuf::from_str(&local_app_data_path) {
-        Ok(path) => path,
-        Err(why) => panic!(
-            "{}",
-            format!("Couldn't convert LOCALAPPDATA to path: {}", why)
-        ),
-    };
+        let mut path = match PathBuf::from_str(&path) {
+            Ok(p) => p,
+            Err(why) => panic!(
+                "{}",
+                format!("Couldn't convert LOCALAPPDATA to path: {}", why)
+            ),
+        };
 
-    local_app_data_path.push("Google/Chrome/User Data/Profile 1/Bookmarks");
+        path.push("Google/Chrome/User Data/Profile 1/Bookmarks");
+        path
+    } else if cfg!(target_os = "linux") {
+        let mut path = dirs::home_dir().expect("Could not determine home directory.");
+
+        path.push(".config/google-chrome/Default/Bookmarks");
+        path
+    } else {
+        panic!("Unsupported OS");
+    };
 
     if !local_app_data_path.exists() {
         panic!(
