@@ -1,12 +1,15 @@
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 
+use crate::app::AppState;
+
 pub enum Control {
     ShouldExit,
     Input(String),
     PasteInput,
     Delete,
-    SetSearchState,
-    SetAppState,
+    SetBookmarksState,
+    SetProjectsState,
+    SetLauncherState,
     SelectNextBookmark,
     SelectPreviousBookmark,
     OpenBookmark,
@@ -14,18 +17,15 @@ pub enum Control {
     None,
 }
 
-enum Mode {
-    Search,
-    App,
-}
-
 pub struct InputHandler {
-    mode: Mode,
+    mode: AppState,
 }
 
 impl InputHandler {
     pub fn new() -> Self {
-        InputHandler { mode: Mode::Search }
+        InputHandler {
+            mode: AppState::Bookmarks,
+        }
     }
 
     pub fn read(&self) -> Control {
@@ -50,18 +50,24 @@ impl InputHandler {
             KeyCode::Backspace => Control::Delete,
             KeyCode::Delete => Control::Clear,
             _ => match self.mode {
-                Mode::Search => match key.code {
+                AppState::Bookmarks => match key.code {
                     KeyCode::Down => Control::SelectNextBookmark,
                     KeyCode::Up => Control::SelectPreviousBookmark,
                     KeyCode::Char(value) => Control::Input(value.to_string()),
                     KeyCode::Enter => Control::OpenBookmark,
-                    KeyCode::PageDown => Control::SetAppState,
-                    KeyCode::PageUp => Control::SetAppState,
+                    KeyCode::PageDown => Control::SetProjectsState,
+                    KeyCode::PageUp => Control::SetLauncherState,
                     _ => Control::None,
                 },
-                Mode::App => match key.code {
-                    KeyCode::PageDown => Control::SetSearchState,
-                    KeyCode::PageUp => Control::SetSearchState,
+                AppState::Projects => match key.code {
+                    KeyCode::PageDown => Control::SetLauncherState,
+                    KeyCode::PageUp => Control::SetBookmarksState,
+                    KeyCode::Char(value) => Control::Input(value.to_string()),
+                    _ => Control::None,
+                },
+                AppState::Launcher => match key.code {
+                    KeyCode::PageDown => Control::SetBookmarksState,
+                    KeyCode::PageUp => Control::SetProjectsState,
                     KeyCode::Char(value) => Control::Input(value.to_string()),
                     _ => Control::None,
                 },
@@ -69,11 +75,7 @@ impl InputHandler {
         }
     }
 
-    pub fn set_mode_search(&mut self) {
-        self.mode = Mode::Search;
-    }
-
-    pub fn set_mode_app(&mut self) {
-        self.mode = Mode::App;
+    pub fn set_mode(&mut self, state: AppState) {
+        self.mode = state;
     }
 }

@@ -40,8 +40,11 @@ impl Widget for &mut App {
                 self.render_bookmarks_header(buf, header_area);
                 self.render_bookmarks_list(buf, main_area)
             }
-            AppState::Apps => {
-                self.render_apps_header(buf, header_area);
+            AppState::Projects => {
+                self.render_projects_header(buf, header_area);
+            }
+            AppState::Launcher => {
+                self.render_launcher_header(buf, header_area);
             }
         }
         self.render_footer(buf, footer_area);
@@ -58,7 +61,15 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_apps_header(&self, buf: &mut Buffer, area: Rect) {
+    fn render_projects_header(&self, buf: &mut Buffer, area: Rect) {
+        let block = Block::bordered().title(self.title.as_str());
+        Paragraph::new(self.input_str.clone())
+            .block(block)
+            .style(Style::default().bg(COLOR_BG))
+            .render(area, buf);
+    }
+
+    fn render_launcher_header(&self, buf: &mut Buffer, area: Rect) {
         let block = Block::bordered().title(self.title.as_str());
         Paragraph::new(self.input_str.clone())
             .block(block)
@@ -113,8 +124,16 @@ impl App {
                             ),
                         ]
             }
-            AppState::Apps => vec![
-                Span::styled("App mode", Style::default().fg(COLOR_ACCENT1)),
+            AppState::Projects => vec![
+                Span::styled("Projects mode", Style::default().fg(COLOR_ACCENT1)),
+                Span::styled(" | ", Style::default().fg(Color::White)),
+                Span::styled(
+                    "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select item / (ENTER) execute",
+                    Style::default().fg(COLOR_ACCENT2),
+                ),
+            ],
+            AppState::Launcher => vec![
+                Span::styled("Launcher mode", Style::default().fg(COLOR_ACCENT1)),
                 Span::styled(" | ", Style::default().fg(Color::White)),
                 Span::styled(
                     "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select item / (ENTER) execute",

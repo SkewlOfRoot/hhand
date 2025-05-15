@@ -18,7 +18,8 @@ pub struct App {
 
 pub enum AppState {
     Bookmarks,
-    Apps,
+    Projects,
+    Launcher,
 }
 
 pub enum StatusMessage {
@@ -41,7 +42,7 @@ impl App {
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
         };
-        app.set_bookmarks_state();
+        app.set_state(AppState::Bookmarks);
         app
     }
 
@@ -57,12 +58,14 @@ impl App {
                 Control::Delete => {
                     self.input_str.pop();
                 }
-                Control::SetSearchState => self.set_bookmarks_state(),
+                Control::SetBookmarksState => self.set_state(AppState::Bookmarks),
+                Control::SetProjectsState => self.set_state(AppState::Projects),
+                Control::SetLauncherState => self.set_state(AppState::Launcher),
                 Control::SelectNextBookmark => self.select_next(),
                 Control::SelectPreviousBookmark => self.select_previous(),
                 Control::OpenBookmark => self.open_bookmark(),
                 Control::Clear => self.clear_input(),
-                Control::SetAppState => self.set_apps_state(),
+
                 Control::None => {}
             }
         }
@@ -81,16 +84,6 @@ impl App {
             })
             .cloned()
             .collect()
-    }
-
-    pub fn process_app(&self) {
-
-        // match self.input_str.as_str() {
-        //     "#vs" => {
-
-        //     }
-        //     _ => {}
-        // }
     }
 
     fn paste_to_input(&mut self) {
@@ -123,23 +116,31 @@ impl App {
         }
     }
 
-    fn set_bookmarks_state(&mut self) {
-        self.state = AppState::Bookmarks;
-        self.input_handler.set_mode_search();
-        self.input_str.clear();
-        self.title = "Search for bookmark".to_string();
-        self.status_message = StatusMessage::Success(format!(
-            "Loaded {} bookmarks",
-            self.bookmark_list.bookmarks.len()
-        ));
-    }
+    fn set_state(&mut self, new_state: AppState) {
+        match new_state {
+            AppState::Bookmarks => {
+                self.title = "Search for bookmark".to_string();
+                self.status_message = StatusMessage::Success(format!(
+                    "Loaded {} bookmarks",
+                    self.bookmark_list.bookmarks.len()
+                ));
+                self.input_handler.set_mode(AppState::Bookmarks);
+            }
 
-    fn set_apps_state(&mut self) {
-        self.state = AppState::Apps;
-        self.input_handler.set_mode_app();
+            AppState::Projects => {
+                self.title = "Launch project".to_string();
+                self.input_handler.set_mode(AppState::Projects);
+                self.status_message = StatusMessage::None;
+            }
+            AppState::Launcher => {
+                self.title = "Launch app".to_string();
+                self.input_handler.set_mode(AppState::Launcher);
+                self.status_message = StatusMessage::None;
+            }
+        }
+
+        self.state = new_state;
         self.input_str.clear();
-        self.title = "Enter app command".to_string();
-        self.status_message = StatusMessage::None;
     }
 
     fn clear_input(&mut self) {
