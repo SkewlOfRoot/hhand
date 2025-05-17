@@ -9,6 +9,7 @@ use std::io::{self, stdout};
 
 mod app;
 mod bookmarks;
+mod launcher;
 mod ui;
 
 fn main() -> anyhow::Result<()> {
@@ -27,7 +28,14 @@ fn main() -> anyhow::Result<()> {
         Ok(b) => b,
     };
 
-    let app_result = App::new(bookmarks).run(terminal);
+    let apps = match launcher::locate_apps() {
+        Err(_) => {
+            panic!("Failed to import Chrome bookmarks.")
+        }
+        Ok(b) => b,
+    };
+
+    let app_result = App::new(bookmarks, apps).run(terminal);
     cleanup_terminal()?;
     app_result
 }

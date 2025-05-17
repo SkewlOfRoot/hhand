@@ -3,12 +3,14 @@ use ratatui::{widgets::ListState, DefaultTerminal};
 
 use crate::{
     bookmarks::*,
+    launcher::LaunchableApp,
     ui::{Control, InputHandler},
 };
 
 pub struct App {
     should_exit: bool,
     pub bookmark_list: BookmarkList,
+    pub app_list: AppList,
     pub input_str: String,
     pub state: AppState,
     pub title: String,
@@ -29,11 +31,15 @@ pub enum StatusMessage {
 }
 
 impl App {
-    pub fn new(bookmarks: Vec<Bookmark>) -> App {
+    pub fn new(bookmarks: Vec<Bookmark>, apps: Vec<LaunchableApp>) -> App {
         let mut app = App {
             should_exit: false,
             bookmark_list: BookmarkList {
                 bookmarks,
+                state: ListState::default(),
+            },
+            app_list: AppList {
+                apps,
                 state: ListState::default(),
             },
             input_str: String::new(),
@@ -75,6 +81,20 @@ impl App {
     pub fn search_bookmarks(&self) -> Vec<Bookmark> {
         self.bookmark_list
             .bookmarks
+            .iter()
+            .filter(|b| {
+                !&self.input_str.is_empty()
+                    && b.name
+                        .to_uppercase()
+                        .contains(&self.input_str.to_uppercase())
+            })
+            .cloned()
+            .collect()
+    }
+
+    pub fn search_apps(&self) -> Vec<LaunchableApp> {
+        self.app_list
+            .apps
             .iter()
             .filter(|b| {
                 !&self.input_str.is_empty()
@@ -150,5 +170,10 @@ impl App {
 
 pub struct BookmarkList {
     bookmarks: Vec<Bookmark>,
+    pub state: ListState,
+}
+
+pub struct AppList {
+    apps: Vec<LaunchableApp>,
     pub state: ListState,
 }

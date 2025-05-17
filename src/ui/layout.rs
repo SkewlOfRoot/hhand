@@ -45,6 +45,7 @@ impl Widget for &mut App {
             }
             AppState::Launcher => {
                 self.render_launcher_header(buf, header_area);
+                self.render_apps_list(buf, main_area);
             }
         }
         self.render_footer(buf, footer_area);
@@ -102,6 +103,31 @@ impl App {
         StatefulWidget::render(list, area, buf, &mut self.bookmark_list.state);
     }
 
+    fn render_apps_list(&mut self, buf: &mut Buffer, area: Rect) {
+        let mut list_items = Vec::<ListItem>::new();
+        let matches = self.search_apps();
+
+        for m in matches {
+            list_items.push(ListItem::new(Line::from(Span::styled(
+                format!("{: <40} : {}", m.name, m.exec_handle),
+                Style::default().fg(COLOR_FG),
+            ))));
+        }
+
+        let block = Block::bordered()
+            .title(Line::raw("Applications ").left_aligned())
+            .border_style(Style::default().fg(COLOR_TITLE_FG).bg(COLOR_BG))
+            .bg(COLOR_BG);
+
+        let list = List::new(list_items)
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol("> ")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        StatefulWidget::render(list, area, buf, &mut self.app_list.state);
+    }
+
     fn render_footer(&self, buf: &mut Buffer, area: Rect) {
         let [left_area, right_area] = Layout::default()
             .direction(Direction::Horizontal)
@@ -136,7 +162,7 @@ impl App {
                 Span::styled("Launcher mode", Style::default().fg(COLOR_ACCENT1)),
                 Span::styled(" | ", Style::default().fg(Color::White)),
                 Span::styled(
-                    "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select item / (ENTER) execute",
+                    "(ESC) exit / (PgUp)/(PgDwn) switch mode / ↑↓ select item / (ENTER) launch",
                     Style::default().fg(COLOR_ACCENT2),
                 ),
             ],
