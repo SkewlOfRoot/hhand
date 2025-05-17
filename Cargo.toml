@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.97"
+anyhow = "1.0.98"
 arboard = "3.5.0"
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 dirs = "6.0.0"
 open = "5.3.2"
 ratatui = "0.29.0"
 rust-ini = "0.21.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"

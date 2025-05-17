@@ -6,26 +6,37 @@ use super::LaunchableApp;
 pub fn locate_apps() -> anyhow::Result<Vec<LaunchableApp>> {
     let mut apps: Vec<LaunchableApp> = Vec::new();
 
-    apps.extend(get_local_apps()?);
+    if let Some(mut local_path) = dirs::home_dir() {
+        local_path.push(".local/share/applications/");
+
+        if local_path.exists() {
+            apps.extend(get_apps(&local_path)?);
+        }
+    }
+
+    let system_path = Path::new("/usr/share/applications/");
+    if system_path.exists() {
+        apps.extend(get_apps(system_path)?);
+    }
+
     apps.extend(get_user_apps());
 
     Ok(apps)
 }
 
-fn get_local_apps() -> anyhow::Result<Vec<LaunchableApp>> {
+fn get_apps(path: &Path) -> anyhow::Result<Vec<LaunchableApp>> {
     let mut apps: Vec<LaunchableApp> = Vec::new();
 
-    let mut dir_path = dirs::home_dir().expect("Could not determine home directory.");
-    dir_path.push(".local/share/applications/");
+    let entries = read_dir(path).expect("Could not list directory.");
+    for e in entries {
+        let file_path = e.unwrap().path();
 
-    if dir_path.exists() {
-        let entries = read_dir(dir_path).expect("Could not list directory.");
-        for e in entries {
-            let file_path = e.unwrap().path();
-
+        if file_path.is_file() {
             if let Some(e) = parse_ini_file(&file_path)? {
                 apps.push(e);
             }
+        } else if file_path.is_dir() {
+            apps.extend(get_apps(&file_path)?);
         }
     }
 

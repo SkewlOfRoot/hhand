@@ -1,4 +1,7 @@
-use std::str::FromStr;
+use std::{
+    process::{Command, Stdio},
+    str::FromStr,
+};
 
 use super::locator_linux;
 
@@ -28,6 +31,23 @@ impl LaunchableApp {
             name: String::from_str(name).unwrap(),
             exec_handle: String::from_str(exec_handle).unwrap(),
         }
+    }
+
+    pub fn launch(&self) -> anyhow::Result<()> {
+        let cleaned = self
+            .exec_handle
+            .split_whitespace()
+            .filter(|part| !part.starts_with('%'))
+            .collect::<Vec<_>>();
+
+        if !cleaned.is_empty() {
+            Command::new(cleaned[0])
+                .args(&cleaned[1..])
+                .stdout(Stdio::null()) // Discard stdout
+                .stderr(Stdio::null()) // Discard stderr
+                .spawn()?;
+        }
+        Ok(())
     }
 }
 

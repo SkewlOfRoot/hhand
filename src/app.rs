@@ -67,12 +67,14 @@ impl App {
                 Control::SetBookmarksState => self.set_state(AppState::Bookmarks),
                 Control::SetProjectsState => self.set_state(AppState::Projects),
                 Control::SetLauncherState => self.set_state(AppState::Launcher),
-                Control::SelectNextBookmark => self.select_next(),
-                Control::SelectPreviousBookmark => self.select_previous(),
+                Control::SelectNextBookmark => self.bookmark_list.state.select_next(),
+                Control::SelectPreviousBookmark => self.bookmark_list.state.select_previous(),
                 Control::OpenBookmark => self.open_bookmark(),
                 Control::Clear => self.clear_input(),
-
                 Control::None => {}
+                Control::SelectNextApp => self.app_list.state.select_next(),
+                Control::SelectPreviousApp => self.app_list.state.select_previous(),
+                Control::LaunchApp => self.launch_app()?,
             }
         }
         Ok(())
@@ -120,20 +122,21 @@ impl App {
         }
     }
 
-    fn select_next(&mut self) {
-        self.bookmark_list.state.select_next();
-    }
-
-    fn select_previous(&mut self) {
-        self.bookmark_list.state.select_previous();
-    }
-
     fn open_bookmark(&self) {
         if let Some(i) = self.bookmark_list.state.selected() {
             let items = self.search_bookmarks();
             let item = &items[i];
             open::that(&item.url).unwrap();
         }
+    }
+
+    fn launch_app(&self) -> anyhow::Result<()> {
+        if let Some(i) = self.app_list.state.selected() {
+            let items = self.search_apps();
+            let item = &items[i];
+            item.launch()?;
+        }
+        Ok(())
     }
 
     fn set_state(&mut self, new_state: AppState) {
@@ -155,7 +158,8 @@ impl App {
             AppState::Launcher => {
                 self.title = "Launch app".to_string();
                 self.input_handler.set_mode(AppState::Launcher);
-                self.status_message = StatusMessage::None;
+                self.status_message =
+                    StatusMessage::Success(format!("Located {} apps", self.app_list.apps.len()));
             }
         }
 

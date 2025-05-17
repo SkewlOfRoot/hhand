@@ -13,6 +13,9 @@ mod launcher;
 mod ui;
 
 fn main() -> anyhow::Result<()> {
+    // Set up a subscriber to output traces to stdout
+    tracing_subscriber::fmt::init();
+
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -30,7 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     let apps = match launcher::locate_apps() {
         Err(_) => {
-            panic!("Failed to import Chrome bookmarks.")
+            panic!("Failed to locate apps.")
         }
         Ok(b) => b,
     };
