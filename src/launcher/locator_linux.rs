@@ -1,5 +1,5 @@
 use ini::Ini;
-use std::{fs::read_dir, path::PathBuf};
+use std::{fs::read_dir, path::Path};
 
 use super::LaunchableApp;
 
@@ -20,12 +20,10 @@ fn get_local_apps() -> anyhow::Result<Vec<LaunchableApp>> {
 
     if dir_path.exists() {
         let entries = read_dir(dir_path).expect("Could not list directory.");
-        println!("hello");
         for e in entries {
             let file_path = e.unwrap().path();
 
             if let Some(e) = parse_ini_file(&file_path)? {
-                println!("found app: {:#?}", &e);
                 apps.push(e);
             }
         }
@@ -34,16 +32,14 @@ fn get_local_apps() -> anyhow::Result<Vec<LaunchableApp>> {
     Ok(apps)
 }
 
-fn parse_ini_file(file_path: &PathBuf) -> anyhow::Result<Option<LaunchableApp>> {
+fn parse_ini_file(file_path: &Path) -> anyhow::Result<Option<LaunchableApp>> {
     let ini_file = Ini::load_from_file(file_path)?;
-    match ini_file.section(Some("Desktop Entry")) {
-        None => Ok(None),
-        Some(sec) => {
-            let name = sec.get("Name").unwrap();
-            let exec = sec.get("Exec").unwrap();
-            Ok(Some(LaunchableApp::new(name, exec)))
+    if let Some(sec) = ini_file.section(Some("Desktop Entry")) {
+        if let (Some(name), Some(exec)) = (sec.get("Name"), sec.get("Exec")) {
+            return Ok(Some(LaunchableApp::new(name, exec)));
         }
     }
+    Ok(None)
 }
 
 fn get_user_apps() -> Vec<LaunchableApp> {
