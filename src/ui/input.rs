@@ -8,7 +8,6 @@ pub enum Control {
     PasteInput,
     Delete,
     SetBookmarksState,
-    SetProjectsState,
     SetLauncherState,
     SelectNextBookmark,
     SelectPreviousBookmark,
@@ -54,7 +53,7 @@ impl InputHandler {
             KeyCode::Delete => Control::Clear,
             _ => match self.mode {
                 AppState::Bookmarks => match key.code {
-                    KeyCode::PageDown => Control::SetProjectsState,
+                    KeyCode::PageDown => Control::SetLauncherState,
                     KeyCode::PageUp => Control::SetLauncherState,
                     KeyCode::Down => Control::SelectNextBookmark,
                     KeyCode::Up => Control::SelectPreviousBookmark,
@@ -62,15 +61,9 @@ impl InputHandler {
                     KeyCode::Enter => Control::OpenBookmark,
                     _ => Control::None,
                 },
-                AppState::Projects => match key.code {
-                    KeyCode::PageDown => Control::SetLauncherState,
-                    KeyCode::PageUp => Control::SetBookmarksState,
-                    KeyCode::Char(value) => Control::Input(value.to_string()),
-                    _ => Control::None,
-                },
                 AppState::Launcher => match key.code {
                     KeyCode::PageDown => Control::SetBookmarksState,
-                    KeyCode::PageUp => Control::SetProjectsState,
+                    KeyCode::PageUp => Control::SetBookmarksState,
                     KeyCode::Down => Control::SelectNextApp,
                     KeyCode::Up => Control::SelectPreviousApp,
                     KeyCode::Enter => Control::LaunchApp,

@@ -1,4 +1,3 @@
-mod launch;
 mod locator;
 mod locator_linux;
 mod locator_win;

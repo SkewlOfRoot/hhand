@@ -20,7 +20,6 @@ pub struct App {
 
 pub enum AppState {
     Bookmarks,
-    Projects,
     Launcher,
 }
 
@@ -65,7 +64,6 @@ impl App {
                     self.input_str.pop();
                 }
                 Control::SetBookmarksState => self.set_state(AppState::Bookmarks),
-                Control::SetProjectsState => self.set_state(AppState::Projects),
                 Control::SetLauncherState => self.set_state(AppState::Launcher),
                 Control::SelectNextBookmark => self.bookmark_list.state.select_next(),
                 Control::SelectPreviousBookmark => self.bookmark_list.state.select_previous(),
@@ -148,12 +146,6 @@ impl App {
                     self.bookmark_list.bookmarks.len()
                 ));
                 self.input_handler.set_mode(AppState::Bookmarks);
-            }
-
-            AppState::Projects => {
-                self.title = "Launch project".to_string();
-                self.input_handler.set_mode(AppState::Projects);
-                self.status_message = StatusMessage::None;
             }
             AppState::Launcher => {
                 self.title = "Launch app".to_string();
