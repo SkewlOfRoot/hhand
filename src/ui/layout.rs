@@ -109,7 +109,7 @@ impl App {
 
         for m in matches {
             list_items.push(ListItem::new(Line::from(Span::styled(
-                format!("{: <40} : {}", m.name, m.exec_handle),
+                m.name.to_string(),
                 Style::default().fg(COLOR_FG),
             ))));
         }

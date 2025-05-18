@@ -21,7 +21,7 @@ pub fn import_from_chrome() -> anyhow::Result<Vec<Bookmark>> {
             ),
         };
 
-        path.push("Google/Chrome/User Data/Profile 1/Bookmarks");
+        path.push("Google/Chrome/User Data/Default/Bookmarks");
         path
     } else if cfg!(target_os = "linux") {
         let mut path = dirs::home_dir().expect("Could not determine home directory.");

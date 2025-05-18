@@ -3,7 +3,9 @@ use std::{
     str::FromStr,
 };
 
-use super::locator_linux;
+use anyhow::Ok;
+
+use super::{locator_linux, locator_win};
 
 #[derive(Debug, Clone)]
 pub struct LaunchableApp {
@@ -13,9 +15,8 @@ pub struct LaunchableApp {
 
 pub fn locate_apps() -> anyhow::Result<Vec<LaunchableApp>> {
     let mut apps: Vec<LaunchableApp> = Vec::new();
-
     if cfg!(target_os = "windows") {
-        todo!();
+        apps.extend(locator_win::locate_apps()?);
     } else if cfg!(target_os = "linux") {
         apps.extend(locator_linux::locate_apps()?);
     } else {
@@ -34,6 +35,25 @@ impl LaunchableApp {
     }
 
     pub fn launch(&self) -> anyhow::Result<()> {
+        if cfg!(target_os = "windows") {
+            self.launch_windows()?;
+        } else if cfg!(target_os = "linux") {
+            self.launch_linux()?
+        } else {
+            panic!("Unsupported OS");
+        };
+        Ok(())
+    }
+
+    fn launch_windows(&self) -> anyhow::Result<()> {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", self.exec_handle.as_str()])
+            .spawn()?;
+
+        Ok(())
+    }
+
+    fn launch_linux(&self) -> anyhow::Result<()> {
         let cleaned = self
             .exec_handle
             .split_whitespace()
