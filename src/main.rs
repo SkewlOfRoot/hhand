@@ -25,17 +25,21 @@ fn main() -> anyhow::Result<()> {
     let terminal = Terminal::new(backend)?;
 
     let bookmarks = match bookmarks::import_from_chrome() {
-        Err(_) => {
-            panic!("Failed to import Chrome bookmarks.")
+        Err(e) => {
+            cleanup_terminal().ok();
+            eprintln!("Failed to import Chrome bookmarks: {}", e);
+            return Err(e);
         }
         Ok(b) => b,
     };
 
     let apps = match launcher::locate_apps() {
-        Err(_) => {
-            panic!("Failed to locate apps.")
+        Err(e) => {
+            cleanup_terminal().ok();
+            eprintln!("Failed to locate apps: {}", e);
+            return Err(e);
         }
-        Ok(b) => b,
+        Ok(a) => a,
     };
 
     let app_result = App::new(bookmarks, apps).run(terminal);

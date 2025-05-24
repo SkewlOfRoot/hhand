@@ -19,19 +19,24 @@ pub fn locate_apps() -> anyhow::Result<Vec<LaunchableApp>> {
         apps.extend(get_apps(system_path)?);
     }
 
-    apps.extend(get_user_apps());
-
     Ok(apps)
 }
 
 fn get_apps(path: &Path) -> anyhow::Result<Vec<LaunchableApp>> {
     let mut apps: Vec<LaunchableApp> = Vec::new();
 
-    let entries = read_dir(path).expect("Could not list directory.");
-    for e in entries {
-        let file_path = e.unwrap().path();
+    let entries = read_dir(path)?;
+    for entry in entries {
+        let file_path = match entry {
+            Ok(e) => e.path(),
+            Err(_) => continue, // Skip entries that cannot be read
+        };
 
         if file_path.is_file() {
+            if file_path.extension().and_then(|s| s.to_str()) != Some("desktop") {
+                continue; // Skip non-desktop files
+            }
+
             if let Some(e) = parse_ini_file(&file_path)? {
                 apps.push(e);
             }
@@ -51,10 +56,4 @@ fn parse_ini_file(file_path: &Path) -> anyhow::Result<Option<LaunchableApp>> {
         }
     }
     Ok(None)
-}
-
-fn get_user_apps() -> Vec<LaunchableApp> {
-    let apps: Vec<LaunchableApp> = Vec::new();
-
-    apps
 }

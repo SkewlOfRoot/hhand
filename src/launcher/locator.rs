@@ -1,9 +1,5 @@
-use std::{
-    process::{Command, Stdio},
-    str::FromStr,
-};
-
-use anyhow::Ok;
+use anyhow::anyhow;
+use std::process::{Command, Stdio};
 
 use super::{locator_linux, locator_win};
 
@@ -29,8 +25,8 @@ pub fn locate_apps() -> anyhow::Result<Vec<LaunchableApp>> {
 impl LaunchableApp {
     pub fn new(name: &str, exec_handle: &str) -> Self {
         LaunchableApp {
-            name: String::from_str(name).unwrap(),
-            exec_handle: String::from_str(exec_handle).unwrap(),
+            name: name.to_string(),
+            exec_handle: exec_handle.to_string(),
         }
     }
 
@@ -40,8 +36,8 @@ impl LaunchableApp {
         } else if cfg!(target_os = "linux") {
             self.launch_linux()?
         } else {
-            panic!("Unsupported OS");
-        };
+            return Err(anyhow!("Unsupported OS for launching applications"));
+        }
         Ok(())
     }
 

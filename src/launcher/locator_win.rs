@@ -1,7 +1,4 @@
-use std::{
-    fs::read_dir,
-    path::{Path, PathBuf},
-};
+use std::{fs::read_dir, path::Path};
 
 use super::LaunchableApp;
 
@@ -26,13 +23,25 @@ pub fn locate_apps() -> anyhow::Result<Vec<LaunchableApp>> {
 fn get_apps(path: &Path) -> anyhow::Result<Vec<LaunchableApp>> {
     let mut apps: Vec<LaunchableApp> = Vec::new();
 
-    let entries = read_dir(path).expect("Could not list directory.");
-    for e in entries {
-        let file_path: PathBuf = e.unwrap().path();
-        if !file_path.is_dir() {
-            let name = file_path.file_stem().unwrap_or_default();
+    let entries = read_dir(path)?;
+    for entry in entries {
+        let file_path = match entry {
+            Ok(e) => e.path(),
+            Err(_) => continue, // Skip entries that cannot be read
+        };
+
+        if file_path.is_file() {
+            if file_path.extension().and_then(|s| s.to_str()) != Some("lnk") {
+                continue; // Skip non-link files
+            }
+
+            let name = file_path
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default();
+
             let path = file_path.to_str().unwrap_or_default();
-            apps.push(LaunchableApp::new(name.to_str().unwrap_or_default(), path));
+            apps.push(LaunchableApp::new(name, path));
         } else if file_path.is_dir() {
             apps.extend(get_apps(&file_path)?);
         }

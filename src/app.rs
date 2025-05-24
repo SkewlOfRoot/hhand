@@ -67,7 +67,7 @@ impl App {
                 Control::SetLauncherState => self.set_state(AppState::Launcher),
                 Control::SelectNextBookmark => self.bookmark_list.state.select_next(),
                 Control::SelectPreviousBookmark => self.bookmark_list.state.select_previous(),
-                Control::OpenBookmark => self.open_bookmark(),
+                Control::OpenBookmark => self.open_bookmark()?,
                 Control::Clear => self.clear_input(),
                 Control::None => {}
                 Control::SelectNextApp => self.app_list.state.select_next(),
@@ -120,19 +120,24 @@ impl App {
         }
     }
 
-    fn open_bookmark(&self) {
+    fn open_bookmark(&self) -> anyhow::Result<()> {
         if let Some(i) = self.bookmark_list.state.selected() {
             let items = self.search_bookmarks();
-            let item = &items[i];
-            open::that(&item.url).unwrap();
+            if i >= items.len() {
+                let item = &items[i];
+                open::that(&item.url)?;
+            }
         }
+        Ok(())
     }
 
     fn launch_app(&self) -> anyhow::Result<()> {
         if let Some(i) = self.app_list.state.selected() {
             let items = self.search_apps();
-            let item = &items[i];
-            item.launch()?;
+            if i < items.len() {
+                let item = &items[i];
+                item.launch()?;
+            }
         }
         Ok(())
     }

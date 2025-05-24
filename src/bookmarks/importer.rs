@@ -1,42 +1,50 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
-pub fn import_from_chrome() -> anyhow::Result<Vec<Bookmark>> {
-    let file_path = get_bookmarks_file_path();
+pub fn import_from_chrome() -> Result<Vec<Bookmark>> {
+    let file_path = get_bookmarks_file_path()?;
 
     if !file_path.exists() {
-        panic!("{}", format!("The path {:#?} does not exist.", file_path));
+        return Err(anyhow::anyhow!("The path {:?} does not exist.", file_path));
     }
 
-    let content = fs::read_to_string(file_path).expect("Failed to read bookmarks file");
-
-    let chrome_bookmarks: ChromeRoot =
-        serde_json::from_str(&content).expect("Failed to parse JSON");
+    let content = fs::read_to_string(&file_path)
+        .with_context(|| format!("Failed to read {:?}", file_path))?;
+    let chrome_bookmarks: ChromeRoot = serde_json::from_str(&content)
+        .with_context(|| format!("Failed to parse Chrome bookmarks at {:?}", file_path))?;
 
     let bookmarks: Vec<Bookmark> = unpack_chrome_roots(&chrome_bookmarks);
     Ok(bookmarks)
 }
 
-fn get_bookmarks_file_path() -> PathBuf {
+fn get_bookmarks_file_path() -> Result<PathBuf> {
     if cfg!(target_os = "windows") {
-        let mut default_path = dirs::home_dir().expect("Could not determine home directory.");
+        let mut default_path = get_home_dir()?;
         default_path.push("AppData/Local/Google/Chrome/User Data/Default/Bookmarks");
 
-        if default_path.exists() {
+        let p = if default_path.exists() {
             default_path
         } else {
-            let mut profile_path = dirs::home_dir().expect("Could not determine home directory.");
+            let mut profile_path = get_home_dir()?;
             profile_path.push("AppData/Local/Google/Chrome/User Data/Profile 1/Bookmarks");
             profile_path
-        }
+        };
+        Ok(p)
     } else if cfg!(target_os = "linux") {
-        let mut path = dirs::home_dir().expect("Could not determine home directory.");
+        let mut path = get_home_dir()?;
 
         path.push(".config/google-chrome/Default/Bookmarks");
-        return path;
+        return Ok(path);
     } else {
-        panic!("Unsupported OS");
+        return Err(anyhow::anyhow!("Unsupported OS for importing bookmarks"));
     }
+}
+
+fn get_home_dir() -> Result<PathBuf> {
+    let profile_path =
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not determine home directory."))?;
+    Ok(profile_path)
 }
 
 fn unpack_chrome_roots(root: &ChromeRoot) -> Vec<Bookmark> {
@@ -55,9 +63,7 @@ fn unpack_chrome_bookmarks(bookmark_item: &ChromeBookmarkItem) -> Vec<Bookmark> 
         None => {
             if let Some(children) = &bookmark_item.children {
                 for child in children {
-                    for bookmark in unpack_chrome_bookmarks(child) {
-                        bookmarks.push(bookmark);
-                    }
+                    bookmarks.extend(unpack_chrome_bookmarks(child));
                 }
             }
         }
