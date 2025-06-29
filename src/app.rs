@@ -47,6 +47,7 @@ impl App {
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
         };
+
         app.set_state(AppState::Bookmarks);
         app
     }

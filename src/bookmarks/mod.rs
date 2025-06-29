@@ -1,3 +1,3 @@
 mod importer;
 
-pub use importer::{import_from_chrome, Bookmark};
+pub use importer::{import_from, Bookmark};

@@ -9,6 +9,7 @@ use std::io::{self, stdout};
 
 mod app;
 mod bookmarks;
+mod config;
 mod launcher;
 mod ui;
 
@@ -24,7 +25,9 @@ fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    let bookmarks = match bookmarks::import_from_chrome() {
+    let config = config::Config::load()?;
+
+    let bookmarks = match bookmarks::import_from(&config.browser) {
         Err(e) => {
             cleanup_terminal().ok();
             eprintln!("Failed to import Chrome bookmarks: {}", e);

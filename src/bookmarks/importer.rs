@@ -1,8 +1,22 @@
 use anyhow::{Context, Result};
+use config::Browser;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
-pub fn import_from_chrome() -> Result<Vec<Bookmark>> {
+use crate::config;
+
+pub fn import_from(browser: &Browser) -> Result<Vec<Bookmark>, anyhow::Error> {
+    match browser {
+        Browser::Chrome => import_from_chrome(),
+        Browser::Firefox => import_from_firefox(),
+    }
+}
+
+fn import_from_firefox() -> Result<Vec<Bookmark>, anyhow::Error> {
+    Ok(Vec::new())
+}
+
+fn import_from_chrome() -> Result<Vec<Bookmark>> {
     let file_path = get_bookmarks_file_path()?;
 
     if !file_path.exists() {
