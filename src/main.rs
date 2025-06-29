@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    let config = config::Config::load()?;
+    let config = config::load()?;
 
     let bookmarks = match bookmarks::import_from(&config.browser) {
         Err(e) => {

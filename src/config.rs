@@ -9,41 +9,47 @@ pub struct Config {
     pub browser: Browser,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum Browser {
     Chrome,
     Firefox,
 }
 
-impl Config {
-    pub fn load() -> anyhow::Result<Self> {
-        let config_path = Path::new(CONFIG_PATH);
+pub fn load() -> anyhow::Result<Config> {
+    let path = Path::new(CONFIG_PATH);
+    Ok(load_or_default(path)?)
+}
 
-        if config_path.exists() {
-            Ok(load(config_path)?)
-        } else {
-            Ok(Config::default())
-        }
-    }
-
-    pub fn save(config: Config) -> anyhow::Result<()> {
-        let str_content = toml::to_string(&config)?;
-        let path = Path::new(CONFIG_PATH);
-        fs::write(path, str_content)?;
-        Ok(())
+fn load_or_default(path: &Path) -> anyhow::Result<Config> {
+    if path.exists() {
+        Ok(load_from_path(path)?)
+    } else {
+        Ok(Config::default())
     }
 }
 
-fn load(path: &Path) -> anyhow::Result<Config> {
+fn load_from_path(path: &Path) -> anyhow::Result<Config> {
     let content = fs::read_to_string(path)?;
     let config = toml::from_str(content.as_str())?;
     Ok(config)
 }
 
+pub fn save(config: Config) -> anyhow::Result<()> {
+    let config_path = Path::new(CONFIG_PATH);
+    save_to_path(config, config_path)?;
+    Ok(())
+}
+
+fn save_to_path(config: Config, path: &Path) -> anyhow::Result<()> {
+    let str_content = toml::to_string(&config)?;
+    fs::write(path, str_content)?;
+    Ok(())
+}
+
 impl Default for Config {
     fn default() -> Self {
         Config {
-            browser: Browser::Chrome,
+            browser: Browser::Firefox,
         }
     }
 }
@@ -63,11 +69,14 @@ mod tests {
     #[test]
     fn test_load_returns_default_when_file_missing() {
         cleanup_test_config();
+        let path = Path::new(TEST_CONFIG_PATH);
         // Temporarily change CONFIG_PATH for this test
-        let config = Config::load();
+        let config = load_or_default(path);
         assert!(config.is_ok());
         let config = config.unwrap();
-        assert!(matches!(config.browser, Browser::Firefox));
+
+        let default_config: Config = Config::default();
+        assert_eq!(config.browser, default_config.browser);
     }
 
     #[test]
@@ -79,7 +88,7 @@ mod tests {
         fs::write(TEST_CONFIG_PATH, config_content).unwrap();
 
         // Temporarily change CONFIG_PATH for this test
-        let config = load(Path::new(TEST_CONFIG_PATH));
+        let config = load_from_path(Path::new(TEST_CONFIG_PATH));
         assert!(config.is_ok());
         let config = config.unwrap();
         assert!(matches!(config.browser, Browser::Chrome));
@@ -93,12 +102,13 @@ mod tests {
         let config = Config {
             browser: Browser::Chrome,
         };
+        let path = Path::new(TEST_CONFIG_PATH);
 
         // Save config to test file
-        Config::save(config).unwrap();
+        save_to_path(config, path).unwrap();
 
         // Read back and check
-        let loaded = Config::load().unwrap();
+        let loaded = load_from_path(path).unwrap();
         assert!(matches!(loaded.browser, Browser::Chrome));
 
         cleanup_test_config();
@@ -110,12 +120,13 @@ mod tests {
         let config = Config {
             browser: Browser::Firefox,
         };
+        let path = Path::new(TEST_CONFIG_PATH);
 
         // Save using the save function
-        Config::save(config).unwrap();
+        save_to_path(config, path).unwrap();
 
         // Load and check
-        let loaded = Config::load().unwrap();
+        let loaded = load_from_path(path).unwrap();
         assert!(matches!(loaded.browser, Browser::Firefox));
 
         cleanup_test_config();
