@@ -2,17 +2,13 @@ use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
+use crate::bookmarks::Browser;
+
 const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub browser: Browser,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub enum Browser {
-    Chrome,
-    Firefox,
 }
 
 pub fn load() -> anyhow::Result<Config> {
