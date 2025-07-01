@@ -5,7 +5,11 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{prelude::CrosstermBackend, Terminal};
-use std::io::{self, stdout};
+
+use std::{
+    io::{self, stdout},
+    process,
+};
 
 mod app;
 mod bookmarks;
@@ -14,24 +18,15 @@ mod launcher;
 mod ui;
 
 fn main() -> anyhow::Result<()> {
-    // Set up a subscriber to output traces to stdout
-    tracing_subscriber::fmt::init();
-
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend)?;
-
     let config = config::load()?;
-
     let bookmarks = match bookmarks::import_from(&config.browser) {
         Err(e) => {
             cleanup_terminal().ok();
-            eprintln!("Failed to import Chrome bookmarks: {}", e);
-            return Err(e);
+            eprintln!(
+                "Failed to import bookmarks from {:#?}: {}",
+                &config.browser, e
+            );
+            process::exit(1);
         }
         Ok(b) => b,
     };
@@ -40,10 +35,18 @@ fn main() -> anyhow::Result<()> {
         Err(e) => {
             cleanup_terminal().ok();
             eprintln!("Failed to locate apps: {}", e);
-            return Err(e);
+            process::exit(1);
         }
         Ok(a) => a,
     };
+
+    // setup terminal
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+    let backend = CrosstermBackend::new(stdout);
+    let terminal = Terminal::new(backend)?;
 
     let app_result = App::new(bookmarks, apps).run(terminal);
     cleanup_terminal()?;
