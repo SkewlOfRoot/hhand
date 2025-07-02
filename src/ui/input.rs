@@ -1,11 +1,11 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 use crate::app::AppState;
 
 pub enum Control {
     ShouldExit,
     Input(String),
-    PasteInput,
+    _PasteInput,
     Delete,
     SetBookmarksState,
     SetLauncherState,
@@ -16,17 +16,20 @@ pub enum Control {
     OpenBookmark,
     LaunchApp,
     Clear,
+    ConfigVisible(bool),
     None,
 }
 
 pub struct InputHandler {
     mode: AppState,
+    config_visible: bool,
 }
 
 impl InputHandler {
     pub fn new() -> Self {
         InputHandler {
             mode: AppState::Bookmarks,
+            config_visible: false,
         }
     }
 
@@ -42,39 +45,48 @@ impl InputHandler {
 
         match key.code {
             KeyCode::Esc => Control::ShouldExit,
-            KeyCode::Char(value) => {
-                if key.modifiers == KeyModifiers::CONTROL {
-                    Control::PasteInput
-                } else {
-                    Control::Input(value.to_string())
+            _ => {
+                if key.code == KeyCode::F(1) {
+                    return Control::ConfigVisible(!self.config_visible);
+                }
+
+                if self.config_visible {
+                    return Control::None;
+                }
+
+                match self.mode {
+                    AppState::Bookmarks => match key.code {
+                        KeyCode::PageDown => Control::SetLauncherState,
+                        KeyCode::PageUp => Control::SetLauncherState,
+                        KeyCode::Down => Control::SelectNextBookmark,
+                        KeyCode::Up => Control::SelectPreviousBookmark,
+                        KeyCode::Backspace => Control::Delete,
+                        KeyCode::Delete => Control::Clear,
+                        KeyCode::Char(value) => Control::Input(value.to_string()),
+                        KeyCode::Enter => Control::OpenBookmark,
+                        _ => Control::None,
+                    },
+                    AppState::Launcher => match key.code {
+                        KeyCode::PageDown => Control::SetBookmarksState,
+                        KeyCode::PageUp => Control::SetBookmarksState,
+                        KeyCode::Down => Control::SelectNextApp,
+                        KeyCode::Up => Control::SelectPreviousApp,
+                        KeyCode::Backspace => Control::Delete,
+                        KeyCode::Delete => Control::Clear,
+                        KeyCode::Enter => Control::LaunchApp,
+                        KeyCode::Char(value) => Control::Input(value.to_string()),
+                        _ => Control::None,
+                    },
                 }
             }
-            KeyCode::Backspace => Control::Delete,
-            KeyCode::Delete => Control::Clear,
-            _ => match self.mode {
-                AppState::Bookmarks => match key.code {
-                    KeyCode::PageDown => Control::SetLauncherState,
-                    KeyCode::PageUp => Control::SetLauncherState,
-                    KeyCode::Down => Control::SelectNextBookmark,
-                    KeyCode::Up => Control::SelectPreviousBookmark,
-                    KeyCode::Char(value) => Control::Input(value.to_string()),
-                    KeyCode::Enter => Control::OpenBookmark,
-                    _ => Control::None,
-                },
-                AppState::Launcher => match key.code {
-                    KeyCode::PageDown => Control::SetBookmarksState,
-                    KeyCode::PageUp => Control::SetBookmarksState,
-                    KeyCode::Down => Control::SelectNextApp,
-                    KeyCode::Up => Control::SelectPreviousApp,
-                    KeyCode::Enter => Control::LaunchApp,
-                    KeyCode::Char(value) => Control::Input(value.to_string()),
-                    _ => Control::None,
-                },
-            },
         }
     }
 
     pub fn set_mode(&mut self, state: AppState) {
         self.mode = state;
+    }
+
+    pub fn set_config_visible(&mut self, visible: bool) {
+        self.config_visible = visible;
     }
 }

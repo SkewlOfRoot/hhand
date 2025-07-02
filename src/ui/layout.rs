@@ -3,7 +3,9 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, HighlightSpacing, List, ListItem, Paragraph, StatefulWidget, Widget},
+    widgets::{
+        Block, Borders, HighlightSpacing, List, ListItem, Paragraph, StatefulWidget, Widget,
+    },
 };
 
 use crate::app::{App, AppState, StatusMessage};
@@ -45,6 +47,11 @@ impl Widget for &mut App {
                 self.render_apps_list(buf, main_area);
             }
         }
+
+        if self.config_visible {
+            self.render_config(buf, main_area);
+        }
+
         self.render_footer(buf, footer_area);
     }
 }
@@ -115,6 +122,39 @@ impl App {
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, area, buf, &mut self.app_list.state);
+    }
+
+    fn render_config(&mut self, buf: &mut Buffer, area: Rect) {
+        let popup_block = Block::default()
+            .title("Config")
+            .borders(Borders::NONE)
+            .style(Style::default().bg(Color::DarkGray));
+
+        let popup_area = self.centered_rect(60, 25, area);
+
+        popup_block.render(popup_area, buf);
+    }
+
+    fn centered_rect(&mut self, percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+        // Cut the given rectangle into three vertical pieces
+        let popup_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage((100 - percent_y) / 2),
+                Constraint::Percentage(percent_y),
+                Constraint::Percentage((100 - percent_y) / 2),
+            ])
+            .split(r);
+
+        // Then cut the middle vertical piece into three width-wise pieces
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Percentage(percent_x),
+                Constraint::Percentage((100 - percent_x) / 2),
+            ])
+            .split(popup_layout[1])[1] // Return the middle chunk
     }
 
     fn render_footer(&self, buf: &mut Buffer, area: Rect) {

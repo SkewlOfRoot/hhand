@@ -15,6 +15,7 @@ pub struct App {
     pub state: AppState,
     pub title: String,
     pub status_message: StatusMessage,
+    pub config_visible: bool,
     input_handler: InputHandler,
 }
 
@@ -46,6 +47,7 @@ impl App {
             title: String::new(),
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
+            config_visible: false,
         };
 
         app.set_state(AppState::Bookmarks);
@@ -60,7 +62,7 @@ impl App {
             match control {
                 Control::ShouldExit => self.should_exit = true,
                 Control::Input(val) => self.input_str.push_str(val.as_str()),
-                Control::PasteInput => self.paste_to_input(),
+                Control::_PasteInput => self.paste_to_input(),
                 Control::Delete => {
                     self.input_str.pop();
                 }
@@ -70,6 +72,7 @@ impl App {
                 Control::SelectPreviousBookmark => self.bookmark_list.state.select_previous(),
                 Control::OpenBookmark => self.open_bookmark()?,
                 Control::Clear => self.clear_input(),
+                Control::ConfigVisible(visible) => self.set_config_visibile(visible),
                 Control::None => {}
                 Control::SelectNextApp => self.app_list.state.select_next(),
                 Control::SelectPreviousApp => self.app_list.state.select_previous(),
@@ -167,6 +170,11 @@ impl App {
 
     fn clear_input(&mut self) {
         self.input_str.clear();
+    }
+
+    fn set_config_visibile(&mut self, visible: bool) {
+        self.config_visible = visible;
+        self.input_handler.set_config_visible(visible);
     }
 }
 
