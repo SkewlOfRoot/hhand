@@ -66,8 +66,14 @@ fn places_file_path(local_base_path: PathBuf) -> Result<PathBuf> {
     // Locate Firefox profile directory.
     let profile_dir = match fs::read_dir(local_base_path)?
         .filter_map(Result::ok)
-        .find(|e| e.path().is_dir() && e.path().ends_with("jdttdzef.default-release"))
-    {
+        .find(|e| {
+            e.path().is_dir()
+                && e.path().file_name().is_some_and(|os_str| {
+                    os_str
+                        .to_str()
+                        .is_some_and(|name| name.ends_with("default-release"))
+                })
+        }) {
         None => return Err(anyhow::anyhow!("Firefox profile directory not found.")),
         Some(entry) => entry,
     };
