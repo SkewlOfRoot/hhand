@@ -15,7 +15,7 @@ pub struct App {
     pub state: AppState,
     pub title: String,
     pub status_message: StatusMessage,
-    pub config_visible: bool,
+    pub config_manager: ConfigManager,
     input_handler: InputHandler,
 }
 
@@ -47,7 +47,7 @@ impl App {
             title: String::new(),
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
-            config_visible: false,
+            config_manager: ConfigManager::default(),
         };
 
         app.set_state(AppState::Bookmarks);
@@ -77,6 +77,8 @@ impl App {
                 Control::SelectNextApp => self.app_list.state.select_next(),
                 Control::SelectPreviousApp => self.app_list.state.select_previous(),
                 Control::LaunchApp => self.launch_app()?,
+                Control::ConfigNext => self.config_manager.next(),
+                Control::ConfigPrevious => self.config_manager.previous(),
             }
         }
         Ok(())
@@ -173,7 +175,7 @@ impl App {
     }
 
     fn set_config_visibile(&mut self, visible: bool) {
-        self.config_visible = visible;
+        self.config_manager.is_visible = visible;
         self.input_handler.set_config_visible(visible);
     }
 }
@@ -186,4 +188,41 @@ pub struct BookmarkList {
 pub struct AppList {
     apps: Vec<LaunchableApp>,
     pub state: ListState,
+}
+
+pub struct ConfigManager {
+    pub is_visible: bool,
+    pub active_element: ConfigElement,
+}
+
+impl Default for ConfigManager {
+    fn default() -> Self {
+        ConfigManager {
+            is_visible: false,
+            active_element: ConfigElement::Browser,
+        }
+    }
+}
+
+impl ConfigManager {
+    pub fn next(&mut self) {
+        match self.active_element {
+            ConfigElement::Browser => self.active_element = ConfigElement::Ok,
+            ConfigElement::Ok => self.active_element = ConfigElement::Cancel,
+            ConfigElement::Cancel => self.active_element = ConfigElement::Browser,
+        }
+    }
+    pub fn previous(&mut self) {
+        match self.active_element {
+            ConfigElement::Browser => self.active_element = ConfigElement::Cancel,
+            ConfigElement::Ok => self.active_element = ConfigElement::Browser,
+            ConfigElement::Cancel => self.active_element = ConfigElement::Ok,
+        }
+    }
+}
+
+pub enum ConfigElement {
+    Browser,
+    Ok,
+    Cancel,
 }

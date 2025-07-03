@@ -18,6 +18,8 @@ pub enum Control {
     Clear,
     ConfigVisible(bool),
     None,
+    ConfigNext,
+    ConfigPrevious,
 }
 
 pub struct InputHandler {
@@ -51,7 +53,13 @@ impl InputHandler {
                 }
 
                 if self.config_visible {
-                    return Control::None;
+                    return match key.code {
+                        KeyCode::Down => Control::ConfigNext,
+                        KeyCode::Right => Control::ConfigNext,
+                        KeyCode::Up => Control::ConfigPrevious,
+                        KeyCode::Left => Control::ConfigPrevious,
+                        _ => Control::None,
+                    };
                 }
 
                 match self.mode {

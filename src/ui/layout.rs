@@ -1,6 +1,6 @@
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{
@@ -8,17 +8,17 @@ use ratatui::{
     },
 };
 
-use crate::app::{App, AppState, StatusMessage};
+use crate::app::{App, AppState, ConfigElement, StatusMessage};
 
-const COLOR_TITLE_FG: Color = Color::Rgb(139, 233, 253);
-const COLOR_FG: Color = Color::Rgb(80, 250, 123);
-const COLOR_BG: Color = Color::Rgb(40, 42, 54);
-const COLOR_SELECTED_BG: Color = Color::Rgb(189, 147, 249);
-const COLOR_BORDER: Color = Color::Rgb(68, 71, 90);
+const COLOR_TITLE_FG: Color = Color::Rgb(139, 233, 253); // Cyan
+const COLOR_FG: Color = Color::Rgb(80, 250, 123); // Green
+const COLOR_BG: Color = Color::Rgb(40, 42, 54); // Dark gray
+const COLOR_SELECTED_BG: Color = Color::Rgb(189, 147, 249); // Light pink
+const COLOR_BORDER: Color = Color::Rgb(68, 71, 90); // Ligh gray?
 const COLOR_ACCENT1: Color = Color::Rgb(80, 250, 123); // Green
 const COLOR_ACCENT2: Color = Color::Rgb(255, 121, 198); // Pink
-const COLOR_SUCCESS: Color = Color::Rgb(80, 250, 123);
-const COLOR_ERROR: Color = Color::Rgb(255, 85, 85);
+const COLOR_SUCCESS: Color = Color::Rgb(80, 250, 123); // Green
+const COLOR_ERROR: Color = Color::Rgb(255, 85, 85); // Red
 
 const SELECTED_STYLE: Style = Style::new()
     .fg(COLOR_FG)
@@ -48,7 +48,7 @@ impl Widget for &mut App {
             }
         }
 
-        if self.config_visible {
+        if self.config_manager.is_visible {
             self.render_config(buf, main_area);
         }
 
@@ -130,9 +130,67 @@ impl App {
             .borders(Borders::NONE)
             .style(Style::default().bg(Color::DarkGray));
 
-        let popup_area = self.centered_rect(60, 25, area);
+        let popup_area = self.centered_rect(60, 50, area);
 
         popup_block.render(popup_area, buf);
+
+        let rows = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+            ])
+            .split(popup_area);
+
+        let cols_row_1 = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints([Constraint::Percentage(25), Constraint::Percentage(75)])
+            .split(rows[0]);
+
+        let cols_row_4 = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(rows[3]);
+
+        let mut browser_value_block = Block::default().borders(Borders::ALL);
+
+        let mut ok_block = Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::LightBlue).fg(Color::White));
+
+        let mut cancel_block = Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::DarkGray).fg(Color::White));
+        let active_style = Style::default().bg(Color::LightYellow).fg(Color::Black);
+
+        match self.config_manager.active_element {
+            ConfigElement::Browser => browser_value_block = browser_value_block.style(active_style),
+            ConfigElement::Ok => ok_block = ok_block.style(active_style),
+            ConfigElement::Cancel => cancel_block = cancel_block.style(active_style),
+        }
+
+        Paragraph::new("Browser")
+            .block(Block::default().borders(Borders::NONE))
+            .render(cols_row_1[0], buf);
+
+        Paragraph::new("Value")
+            .block(browser_value_block)
+            .render(cols_row_1[1], buf);
+
+        Paragraph::new("OK")
+            .block(ok_block)
+            .centered()
+            .render(cols_row_4[0], buf);
+
+        Paragraph::new("Cancel")
+            .block(cancel_block)
+            .centered()
+            .render(cols_row_4[1], buf);
     }
 
     fn centered_rect(&mut self, percent_x: u16, percent_y: u16, r: Rect) -> Rect {
