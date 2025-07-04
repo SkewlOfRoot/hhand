@@ -30,7 +30,6 @@ fn load_or_default(path: &Path) -> anyhow::Result<Config> {
 
 fn load_from_path(path: &Path) -> anyhow::Result<Config> {
     let content = fs::read_to_string(path)?;
-    println!("Content: {}", &content);
     let config = toml::from_str(content.as_str())?;
     Ok(config)
 }

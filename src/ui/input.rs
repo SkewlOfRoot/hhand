@@ -70,8 +70,8 @@ impl InputHandler {
                         KeyCode::Up => Control::SelectPreviousBookmark,
                         KeyCode::Backspace => Control::Delete,
                         KeyCode::Delete => Control::Clear,
-                        KeyCode::Char(value) => Control::Input(value.to_string()),
                         KeyCode::Enter => Control::OpenBookmark,
+                        KeyCode::Char(value) => Control::Input(value.to_string()),
                         _ => Control::None,
                     },
                     AppState::Launcher => match key.code {

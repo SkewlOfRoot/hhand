@@ -3,6 +3,7 @@ use ratatui::{widgets::ListState, DefaultTerminal};
 
 use crate::{
     bookmarks::*,
+    config::{self, Config},
     launcher::LaunchableApp,
     ui::{Control, InputHandler},
 };
@@ -31,7 +32,7 @@ pub enum StatusMessage {
 }
 
 impl App {
-    pub fn new(bookmarks: Vec<Bookmark>, apps: Vec<LaunchableApp>) -> App {
+    pub fn new(bookmarks: Vec<Bookmark>, apps: Vec<LaunchableApp>, config: Config) -> App {
         let mut app = App {
             should_exit: false,
             bookmark_list: BookmarkList {
@@ -47,7 +48,7 @@ impl App {
             title: String::new(),
             status_message: StatusMessage::None,
             input_handler: InputHandler::new(),
-            config_manager: ConfigManager::default(),
+            config_manager: ConfigManager::new(config),
         };
 
         app.set_state(AppState::Bookmarks);
@@ -129,7 +130,7 @@ impl App {
     fn open_bookmark(&self) -> anyhow::Result<()> {
         if let Some(i) = self.bookmark_list.state.selected() {
             let items = self.search_bookmarks();
-            if i >= items.len() {
+            if i < items.len() {
                 let item = &items[i];
                 open::that(&item.url)?;
             }
@@ -193,13 +194,21 @@ pub struct AppList {
 pub struct ConfigManager {
     pub is_visible: bool,
     pub active_element: ConfigElement,
+    pub config: Config,
 }
 
-impl Default for ConfigManager {
-    fn default() -> Self {
+pub enum ConfigElement {
+    Browser,
+    Ok,
+    Cancel,
+}
+
+impl ConfigManager {
+    fn new(config: Config) -> Self {
         ConfigManager {
             is_visible: false,
             active_element: ConfigElement::Browser,
+            config,
         }
     }
 }
@@ -219,10 +228,9 @@ impl ConfigManager {
             ConfigElement::Cancel => self.active_element = ConfigElement::Ok,
         }
     }
-}
 
-pub enum ConfigElement {
-    Browser,
-    Ok,
-    Cancel,
+    pub fn save(self) -> anyhow::Result<()> {
+        config::save(&self.config)?;
+        Ok(())
+    }
 }

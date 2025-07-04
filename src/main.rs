@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    let app_result = App::new(bookmarks, apps).run(terminal);
+    let app_result = App::new(bookmarks, apps, config).run(terminal);
     cleanup_terminal()?;
     app_result
 }
