@@ -32,22 +32,19 @@ pub(crate) fn import() -> Result<Vec<Bookmark>> {
 
 /// Determines the path to the `places.sqlite` file for the default Firefox profile.
 ///
-/// On Linux, searches for a profile directory ending with `.default-release`.
-/// On Windows, this is not yet implemented.
+/// Searches for a profile directory ending with `.default-release`.
 ///
 /// # Returns
 /// - `Ok(PathBuf)` with the path to a temporary copy of `places.sqlite`.
 /// - `Err(anyhow::Error)` if the profile or database cannot be found.
 fn get_places_file_path() -> Result<PathBuf> {
     if cfg!(target_os = "windows") {
-        let mut default_path = get_home_dir()?;
-        default_path.push("AppData/Roaming/Mozilla/Firefox/Profiles/");
-
-        todo!("Locate places.sqlite on Windows");
+        let mut base_path = get_home_dir()?;
+        base_path.push("AppData/Roaming/Mozilla/Firefox/Profiles/");
+        Ok(places_file_path(base_path)?)
     } else if cfg!(target_os = "linux") {
         let mut base_path = get_home_dir()?;
         base_path.push(".mozilla/firefox/");
-
         Ok(places_file_path(base_path)?)
     } else {
         return Err(anyhow::anyhow!("Unsupported OS for importing bookmarks"));
